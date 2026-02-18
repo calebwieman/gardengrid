@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
-import PricingSection from "@/components/Pricing";
 
 export const metadata: Metadata = {
   title: "GardenGrid - Plan Your Perfect Garden",
@@ -262,8 +261,32 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Pricing */}
-      <PricingSection />
+      {/* Waitlist CTA */}
+      <section className="py-20 px-4 bg-gradient-to-r from-green-600 to-emerald-600">
+        <div className="max-w-2xl mx-auto text-center text-white">
+          <h2 className="text-3xl font-bold mb-4">
+            Launching Soon!
+          </h2>
+          <p className="text-xl mb-8 opacity-90">
+            Join the waitlist to get early access and lock in <strong>founder pricing</strong> - 50% off Pro for life!
+          </p>
+          <Link 
+            href="/waitlist"
+            className="inline-block px-8 py-4 bg-white text-green-600 hover:bg-gray-100 font-bold rounded-xl transition-colors text-lg"
+          >
+            Join Waitlist
+          </Link>
+          <p className="mt-4 text-sm opacity-75">
+            Or try the app for free now →
+          </p>
+          <Link 
+            href="/app"
+            className="inline-block mt-2 px-6 py-2 border-2 border-white text-white hover:bg-white/10 font-medium rounded-lg transition-colors"
+          >
+            Open App
+          </Link>
+        </div>
+      </section>
 
       {/* Contact */}
       <section className="py-20 px-4 bg-gray-50">

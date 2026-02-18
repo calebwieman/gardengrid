@@ -643,20 +643,23 @@ export default function Home() {
                 className="text-sm md:text-xl font-semibold text-gray-700 dark:text-gray-200 bg-transparent border-b-2 border-gray-300 dark:border-gray-600 focus:border-green-500 focus:outline-none px-2 py-1 flex-1 min-w-[120px] max-w-xs"
                 placeholder="Garden name..."
               />
-              {/* Dark mode toggle - always visible */}
-              <button
-                onClick={() => setDarkMode(!darkMode)}
-                className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex-shrink-0"
-                title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {darkMode ? '☀️' : '🌙'}
-              </button>
             </div>
             <p className="text-gray-600 dark:text-gray-300 text-xs md:text-base">
               Drag plants onto the grid. Green = companions, Red = avoid!
             </p>
           </header>
           </>
+          )}
+
+          {/* Dark mode toggle - fixed position on desktop */}
+          {!isMobile && (
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className="fixed top-4 right-4 z-40 p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {darkMode ? '☀️' : '🌙'}
+            </button>
           )}
           
           {/* Show alternative content based on active tab */}
