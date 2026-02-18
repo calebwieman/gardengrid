@@ -583,7 +583,16 @@ export default function Home() {
           {/* Header */}
           <header className="mb-4 md:mb-8">
             <div className="flex flex-wrap items-center gap-2 mb-2">
-              <h1 className="text-xl md:text-3xl font-bold text-green-800 dark:text-green-400">🌱 GardenGrid</h1>
+              <h1 className="text-xl md:text-3xl font-bold text-green-800 dark:text-green-400 flex items-center gap-2">
+                <svg className="w-8 h-8" viewBox="0 0 40 40" fill="none">
+                  <rect x="2" y="2" width="16" height="16" rx="3" fill="#22c55e" fillOpacity="0.2" stroke="#22c55e" strokeWidth="2"/>
+                  <rect x="22" y="2" width="16" height="16" rx="3" fill="#22c55e" fillOpacity="0.2" stroke="#22c55e" strokeWidth="2"/>
+                  <rect x="2" y="22" width="16" height="16" rx="3" fill="#22c55e" fillOpacity="0.2" stroke="#22c55e" strokeWidth="2"/>
+                  <rect x="22" y="22" width="16" height="16" rx="3" fill="#16a34a" stroke="#16a34a" strokeWidth="2"/>
+                  <path d="M30 30L34 34M30 34L34 30" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round"/>
+                </svg>
+                GardenGrid
+              </h1>
               <input
                 type="text"
                 value={gardenName}
@@ -880,8 +889,8 @@ export default function Home() {
                       <button
                         key={plant.id}
                         onClick={() => {
-                          setSelectedPlant(plant.id);
                           placePlant(cellPickerOpen.x, cellPickerOpen.y);
+                          setSelectedPlant(null); // Clear selection so next tap opens picker again
                           setCellPickerOpen(null);
                         }}
                         className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
