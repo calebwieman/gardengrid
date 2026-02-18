@@ -23,6 +23,7 @@ import GardenShare from '@/components/GardenShare';
 import GardenTasks from '@/components/GardenTasks';
 import GardenAnalytics from '@/components/GardenAnalytics';
 import SuccessionPlanting from '@/components/SuccessionPlanting';
+import GardenThemes from '@/components/GardenThemes';
 
 function DraggablePlant({ plant }: { plant: Plant }) {
   const { selectedPlantId, setSelectedPlant } = useGardenStore();
@@ -724,6 +725,9 @@ export default function Home() {
               
               {/* Garden Templates */}
               <GardenTemplates />
+              
+              {/* Garden Themes - Pre-designed garden layouts */}
+              <GardenThemes />
               
               {/* Garden Manager - Multiple gardens support */}
               <GardenManager />

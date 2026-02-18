@@ -53,6 +53,7 @@ src/
 - [x] Iteration 18: Monthly Garden Task Checklist - zone-based personalized monthly tasks
 - [x] Iteration 19: Garden Analytics Dashboard - harvest timeline, category breakdown, growth progress, sun needs
 - [x] Iteration 20: Succession Planting Scheduler - continuous harvest planning with zone-based planting dates
+- [x] Iteration 21: Garden Themes - pre-designed garden layouts (Pizza, Salsa, Salad, Herb Spiral, Three Sisters, Butterfly, Soup, Pickling, Asian, Square Foot)
 
 ## Features (Coming Soon)
 
