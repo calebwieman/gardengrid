@@ -31,6 +31,7 @@ import GardenReminders from '@/components/GardenReminders';
 import GardenAchievements from '@/components/GardenAchievements';
 import MoonPhaseGardening from '@/components/MoonPhaseGardening';
 import SmartSuggestions from '@/components/SmartSuggestions';
+import GardenSupplyCalculator from '@/components/GardenSupplyCalculator';
 
 function DraggablePlant({ plant }: { plant: Plant }) {
   const { selectedPlantId, setSelectedPlant } = useGardenStore();
@@ -762,6 +763,9 @@ export default function Home() {
               
               {/* Seed Shopping List */}
               <SeedList />
+              
+              {/* Garden Supply Calculator - Estimate costs */}
+              <GardenSupplyCalculator />
               
               {/* Monthly Garden Tasks */}
               <GardenTasks />

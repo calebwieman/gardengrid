@@ -59,6 +59,7 @@ src/
 - [x] Iteration 24: Garden Photo Gallery - upload photos to document garden progress over time with captions and dates
 - [x] Iteration 25: Garden Achievements - gamification system with 20+ achievements for planting, harvesting, companion planting, consistency, and exploration
 - [x] Iteration 26: Moon Phase Gardening - lunar phase tracker with planting advice based on moon calendar
+- [x] Iteration 27: Garden Supply Calculator - estimates seeds, soil, fertilizer, mulch, and supplies costs based on garden layout
 
 ## Features (Coming Soon)
 
