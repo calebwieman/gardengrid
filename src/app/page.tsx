@@ -55,16 +55,16 @@ function DraggablePlant({ plant }: { plant: Plant }) {
         onClick={() => setSelectedPlant(plant.id === selectedPlantId ? null : plant.id)}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className={`flex items-center gap-2 w-full p-2 rounded-lg text-left transition-all ${
+        className={`flex items-center gap-2 md:gap-3 w-full p-3 md:p-2 rounded-lg text-left transition-all touch-manipulation ${
           isSelected 
-            ? 'bg-green-100 border-2 border-green-500' 
-            : 'bg-white border border-gray-200 hover:bg-gray-50'
+            ? 'bg-green-100 dark:bg-green-900 border-2 border-green-500' 
+            : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
         } ${isDragging ? 'opacity-50' : ''}`}
         style={style}
       >
-        <span className="text-2xl">{plant.emoji}</span>
-        <span className="font-medium text-gray-700">{plant.name}</span>
-        <span className="text-xs text-gray-400 ml-auto">{plant.category}</span>
+        <span className="text-2xl md:text-3xl">{plant.emoji}</span>
+        <span className="font-medium text-gray-700 dark:text-gray-200 text-base md:text-sm">{plant.name}</span>
+        <span className="text-xs text-gray-400 ml-auto hidden md:block">{plant.category}</span>
       </button>
       
       {/* Hover Tooltip */}
@@ -84,12 +84,13 @@ function DraggablePlant({ plant }: { plant: Plant }) {
   );
 }
 
-function DroppableCell({ x, y, showRelationships, relationships, onViewDetails }: { 
+function DroppableCell({ x, y, showRelationships, relationships, onViewDetails, isMobile }: { 
   x: number; 
   y: number;
   showRelationships: boolean;
   relationships: { type: 'companion' | 'antagonist' | 'spacing'; fromX: number; fromY: number; toX: number; toY: number }[];
   onViewDetails?: (plant: Plant, x: number, y: number) => void;
+  isMobile: boolean;
 }) {
   const { placedPlants, selectedPlantId, placePlant, removePlant, updatePlantStage } = useGardenStore();
   
@@ -132,7 +133,7 @@ function DroppableCell({ x, y, showRelationships, relationships, onViewDetails }
       ref={setNodeRef}
       onClick={handleClick}
       onContextMenu={handleViewDetails}
-      className={`aspect-square rounded cursor-pointer transition-all flex items-center justify-center text-2xl relative group
+      className={`aspect-square rounded-sm md:rounded cursor-pointer transition-all flex items-center justify-center text-xl md:text-2xl relative group touch-manipulation
         ${isOver && selectedPlantId ? 'ring-2 ring-green-400 ring-inset' : ''}
         ${plantData 
           ? '' 
@@ -143,6 +144,7 @@ function DroppableCell({ x, y, showRelationships, relationships, onViewDetails }
       `}
       style={{ 
         backgroundColor: plantData ? plantData.color + '40' : undefined,
+        minHeight: isMobile ? '36px' : 'auto',
       }}
       title={plantData ? `${plantData.name} - Click to change stage` : (selectedPlantId ? 'Drop to plant' : 'Select a plant first')}
     >
@@ -535,6 +537,7 @@ export default function Home() {
           showRelationships={showRelationships}
           relationships={relationships}
           onViewDetails={(plant, px, py) => setSelectedPlacedPlant({ plant, x: px, y: py })}
+          isMobile={isMobile}
         />
       );
     }
@@ -904,22 +907,23 @@ export default function Home() {
                 )}
                 
                 {/* Grid with relationship lines */}
-                <div className="relative overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0">
+                <div className="relative overflow-x-auto -mx-2 px-2 md:mx-0 md:px-0">
                   <div 
                     ref={gardenGridRef}
-                    className="grid gap-1 bg-gray-200 dark:bg-gray-600 p-1 rounded mx-auto"
+                    className="grid gap-0.5 md:gap-1 bg-gray-200 dark:bg-gray-600 p-0.5 md:p-1 rounded mx-auto touch-none"
                     style={{ 
                       gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
-                      maxWidth: '100%',
-                      width: 'fit-content'
+                      maxWidth: '100vw - 40px',
+                      width: isMobile ? `calc(100vw - 40px)` : 'fit-content',
+                      aspectRatio: '1 / 1'
                     }}
                   >
                     {gridCells}
                   </div>
-                  <RelationshipLines relationships={relationships} cellSize={isMobile ? (gridSize === 4 ? 70 : gridSize === 8 ? 45 : 38) : gridSize === 4 ? 120 : gridSize === 8 ? 65 : 45} />
+                  <RelationshipLines relationships={relationships} cellSize={isMobile ? (gridSize === 4 ? 40 : gridSize === 8 ? 35 : 30) : gridSize === 4 ? 120 : gridSize === 8 ? 65 : 45} />
                 </div>
                 
-                <p className="mt-4 text-sm text-gray-500 text-center">
+                <p className="mt-2 md:mt-4 text-xs md:text-sm text-gray-500 dark:text-gray-400 text-center">
                   Each cell = 1 sq ft • Green lines = companions • Red dashed = avoid
                 </p>
               </div>
