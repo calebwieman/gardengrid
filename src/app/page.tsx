@@ -101,23 +101,26 @@ function DroppableCell({ x, y, showRelationships, relationships, onViewDetails, 
   onHover?: (x: number, y: number) => void;
   onCellTap?: (x: number, y: number) => void;
 }) {
-  const { placedPlants, selectedPlantId, placePlant, removePlant, updatePlantStage, setPlacedPlants } = useGardenStore();
+  const { placedPlants, selectedPlantId, placePlant, removePlant, updatePlantStage } = useGardenStore();
   
-  // Direct plant placement - doesn't rely on selectedPlantId state
+  // Direct plant placement - gets current state directly from store to avoid stale closure
   const placePlantDirect = (plantId: string, x: number, y: number) => {
+    // Use getState to get the freshest placedPlants
+    const currentPlants = useGardenStore.getState().placedPlants;
+    const currentSetPlacedPlants = useGardenStore.getState().setPlacedPlants;
     const now = new Date().toISOString();
-    const existingIndex = placedPlants.findIndex(p => p.x === x && p.y === y);
+    const existingIndex = currentPlants.findIndex(p => p.x === x && p.y === y);
     
     if (existingIndex >= 0) {
       // Update existing plant at this location
-      const newPlants = [...placedPlants];
+      const newPlants = [...currentPlants];
       newPlants[existingIndex] = {
         ...newPlants[existingIndex],
         plantId,
         plantedAt: now,
         stage: 'seedling',
       };
-      setPlacedPlants(newPlants);
+      currentSetPlacedPlants(newPlants);
     } else {
       // Add new plant
       const newPlant = {
@@ -128,7 +131,7 @@ function DroppableCell({ x, y, showRelationships, relationships, onViewDetails, 
         plantedAt: now,
         stage: 'seedling' as const,
       };
-      setPlacedPlants([...placedPlants, newPlant]);
+      currentSetPlacedPlants([...currentPlants, newPlant]);
     }
   };
   
@@ -417,6 +420,7 @@ export default function Home() {
   const [selectedPlacedPlant, setSelectedPlacedPlant] = useState<{plant: Plant; x: number; y: number} | null>(null);
   const [darkMode, setDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('garden');
+  const [isMobile, setIsMobile] = useState(false);
   const [hoveredCell, setHoveredCell] = useState<{ x: number; y: number } | null>(null);
   const [showCostTracker, setShowCostTracker] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
@@ -432,6 +436,14 @@ export default function Home() {
       document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
+  
+  // Check for mobile viewport
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   const { relationships, score, companionCount, antagonistCount, spacingWarnings } = useGardenRelationships(placedPlants);
   
@@ -516,6 +528,10 @@ export default function Home() {
     e.target.value = ''; // Reset input
   };
   
+  const gardenGridRef = useRef<HTMLDivElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  
   // Export garden as image
   const handleExportImage = async () => {
     if (!gardenGridRef.current) return;
@@ -537,6 +553,21 @@ export default function Home() {
       setIsExporting(false);
     }
   };
+  
+  // Check for mobile viewport
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  // Close mobile menu when selecting a plant on mobile
+  useEffect(() => {
+    if (isMobile && selectedPlantId) {
+      setShowMobileMenu(false);
+    }
+  }, [selectedPlantId, isMobile]);
   
   // Check for shared garden URL on load
   useEffect(() => {
