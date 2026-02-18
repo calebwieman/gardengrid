@@ -176,11 +176,6 @@ interface GardenState {
   addNotification: (message: string, type: Notification['type'], plantId?: string) => void;
   markNotificationRead: (id: string) => void;
   clearNotifications: () => void;
-  
-  // Seed Vault
-  addSeedEntry: (entry: SeedEntry) => void;
-  updateSeedEntry: (id: string, entry: SeedEntry) => void;
-  removeSeedEntry: (id: string) => void;
 }
 
 export const useGardenStore = create<GardenState>()(

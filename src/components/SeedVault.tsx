@@ -102,7 +102,7 @@ export default function SeedVault({ onClose }: SeedVaultProps) {
     
     // Most seeds last 2-4 years depending on type
     const date = new Date();
-    if (plant.category === 'Vegetables') {
+    if (plant.category === 'vegetable') {
       if (['tomato', 'pepper', 'eggplant', 'squash', 'pumpkin', 'cucumber', 'melon'].some(c => plant.id.includes(c))) {
         date.setFullYear(date.getFullYear() + 6);
       } else if (['onion', 'carrot', 'parsley', 'celery'].some(c => plant.id.includes(c))) {
@@ -110,7 +110,7 @@ export default function SeedVault({ onClose }: SeedVaultProps) {
       } else {
         date.setFullYear(date.getFullYear() + 4);
       }
-    } else if (plant.category === 'Herbs') {
+    } else if (plant.category === 'herb') {
       date.setFullYear(date.getFullYear() + 3);
     } else {
       date.setFullYear(date.getFullYear() + 2);
@@ -306,7 +306,7 @@ export default function SeedVault({ onClose }: SeedVaultProps) {
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center text-xl">
-                    {plant.icon || '🌱'}
+                    {plant.emoji || '🌱'}
                   </div>
                   <div>
                     <div className="font-medium text-gray-800 dark:text-white">{plant.name}</div>
