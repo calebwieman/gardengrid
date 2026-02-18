@@ -165,6 +165,22 @@ function DroppableCell({ x, y, showRelationships, relationships, onViewDetails, 
     >
       {plantData?.emoji}
       
+      {/* Relationship indicators */}
+      {showRelationships && cellRelationships.length > 0 && (
+        <div className="absolute -top-1 -right-1 flex gap-0.5">
+          {cellRelationships.slice(0, 3).map((r, i) => (
+            <div 
+              key={i}
+              className={`w-2.5 h-2.5 rounded-full border border-white dark:border-gray-800 ${
+                r.type === 'companion' ? 'bg-green-500' : 
+                r.type === 'antagonist' ? 'bg-red-500' : 'bg-orange-500'
+              }`}
+              title={r.type === 'companion' ? 'Good companion' : r.type === 'antagonist' ? 'Bad combination' : 'Too close'}
+            />
+          ))}
+        </div>
+      )}
+      
       {/* Stage indicator */}
       {plantData && placedPlant?.stage && (
         <div 
@@ -934,7 +950,7 @@ export default function Home() {
                   >
                     {gridCells}
                   </div>
-                  <RelationshipLines relationships={relationships} cellSize={isMobile ? (gridSize === 4 ? 40 : gridSize === 8 ? 35 : 30) : gridSize === 4 ? 120 : gridSize === 8 ? 65 : 45} gridSize={gridSize} />
+                  {/* Relationship lines now shown as indicators on cells instead */}
                 </div>
                 
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
