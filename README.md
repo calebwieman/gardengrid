@@ -41,7 +41,8 @@ src/
 - [x] Iteration 6: Planting calendar with USDA zone selection + 18 plants
 - [x] Iteration 7: Plant search/filter + hover tooltips
 - [x] Iteration 8: Auto-save to localStorage + save indicator toast
-- [ ] Iteration 9: (Coming next)
+- [x] Iteration 9: Spacing warnings + garden stats + growing tips
+- [x] Iteration 10: Garden templates + 45+ plants database
 
 ## Features (Coming Soon)
 

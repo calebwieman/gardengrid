@@ -19,6 +19,7 @@ interface GardenState {
   setGardenName: (name: string) => void;
   setGridSize: (size: number) => void;
   setSelectedPlant: (plantId: string | null) => void;
+  setPlacedPlants: (plants: PlacedPlant[]) => void;
   placePlant: (x: number, y: number) => void;
   removePlant: (x: number, y: number) => void;
   clearGarden: () => void;
@@ -44,6 +45,8 @@ export const useGardenStore = create<GardenState>()(
       }),
       
       setSelectedPlant: (plantId) => set({ selectedPlantId: plantId }),
+      
+      setPlacedPlants: (plants) => set({ placedPlants: plants }),
       
       placePlant: (x, y) => {
         const { placedPlants, selectedPlantId } = get();

@@ -6,6 +6,9 @@ import { useGardenStore, PlacedPlant } from '@/stores/gardenStore';
 import { plants, getPlantById, Plant } from '@/lib/plants';
 import PlantingCalendar from '@/components/PlantingCalendar';
 import SaveIndicator from '@/components/SaveIndicator';
+import GardenStats from '@/components/GardenStats';
+import GardenTips from '@/components/GardenTips';
+import GardenTemplates from '@/components/GardenTemplates';
 
 function DraggablePlant({ plant }: { plant: Plant }) {
   const { selectedPlantId, setSelectedPlant } = useGardenStore();
@@ -64,7 +67,7 @@ function DroppableCell({ x, y, showRelationships, relationships }: {
   x: number; 
   y: number;
   showRelationships: boolean;
-  relationships: { type: 'companion' | 'antagonist'; fromX: number; fromY: number; toX: number; toY: number }[];
+  relationships: { type: 'companion' | 'antagonist' | 'spacing'; fromX: number; fromY: number; toX: number; toY: number }[];
 }) {
   const { placedPlants, selectedPlantId, placePlant, removePlant } = useGardenStore();
   
@@ -146,7 +149,7 @@ function RelationshipLines({
   relationships, 
   cellSize 
 }: { 
-  relationships: { type: 'companion' | 'antagonist'; fromX: number; fromY: number; toX: number; toY: number }[];
+  relationships: { type: 'companion' | 'antagonist' | 'spacing'; fromX: number; fromY: number; toX: number; toY: number }[];
   cellSize: number;
 }) {
   if (relationships.length === 0) return null;
@@ -472,8 +475,17 @@ export default function Home() {
                 </button>
               </div>
               
+              {/* Garden Templates */}
+              <GardenTemplates />
+              
               {/* Planting Calendar */}
               <PlantingCalendar placedPlants={placedPlants} />
+              
+              {/* Garden Stats */}
+              <GardenStats placedPlants={placedPlants} />
+              
+              {/* Growing Tips */}
+              <GardenTips placedPlants={placedPlants} />
             </aside>
             
             {/* Garden Grid */}
