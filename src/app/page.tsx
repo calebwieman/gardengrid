@@ -37,6 +37,7 @@ import GardenCostTracker from '@/components/GardenCostTracker';
 import GardenHealthScore from '@/components/GardenHealthScore';
 import GardenBackup from '@/components/GardenBackup';
 import GardenAssistant from '@/components/GardenAssistant';
+import SeedVault from '@/components/SeedVault';
 
 function DraggablePlant({ plant }: { plant: Plant }) {
   const { selectedPlantId, setSelectedPlant } = useGardenStore();
@@ -710,6 +711,12 @@ export default function Home() {
           {activeTab === 'assistant' && (
             <div className="space-y-4">
               <GardenAssistant />
+            </div>
+          )}
+          
+          {activeTab === 'seeds' && (
+            <div className="space-y-4">
+              <SeedVault />
             </div>
           )}
           

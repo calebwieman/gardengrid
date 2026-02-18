@@ -30,7 +30,7 @@ export default function SeedVault({ onClose }: SeedVaultProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Get unique plants that can be grown from seed
-  const seedablePlants = plants.filter(p => p.sowing !== 'start indoors');
+  const seedablePlants = plants;
 
   const filteredSeeds = seedVault.filter(seed => {
     const plant = plants.find(p => p.id === seed.plantId);
