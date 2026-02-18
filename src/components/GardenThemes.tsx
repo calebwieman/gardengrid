@@ -236,30 +236,37 @@ const gardenThemes: GardenTheme[] = [
 export default function GardenThemes() {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<GardenTheme | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
   const { 
     setGardenName, 
     setGridSize, 
     setPlacedPlants, 
     clearGarden,
-    gardenName 
+    gardenName,
+    placedPlants,
   } = useGardenStore();
 
   const handleApplyTheme = (theme: GardenTheme) => {
-    setSelectedTheme(theme);
+    // If there are already plants in the garden, show confirmation
+    if (placedPlants.length > 0) {
+      setSelectedTheme(theme);
+      setShowConfirm(true);
+    } else {
+      // No plants, apply directly
+      applyTheme(theme);
+    }
   };
 
-  const confirmApplyTheme = () => {
-    if (!selectedTheme) return;
-    
+  const applyTheme = (theme: GardenTheme) => {
     // Clear current garden
     clearGarden();
     
     // Apply theme settings
-    setGardenName(`${selectedTheme.name} Garden`);
-    setGridSize(selectedTheme.gridSize);
+    setGardenName(`${theme.name} Garden`);
+    setGridSize(theme.gridSize);
     
     // Place plants with unique IDs
-    const newPlants = selectedTheme.plants.map((p, index) => ({
+    const newPlants = theme.plants.map((p, index) => ({
       id: `theme-plant-${Date.now()}-${index}`,
       plantId: p.plantId,
       x: p.x,
@@ -271,15 +278,20 @@ export default function GardenThemes() {
     setPlacedPlants(newPlants);
     setIsOpen(false);
     setSelectedTheme(null);
+    setShowConfirm(false);
+  };
+
+  const confirmApplyTheme = () => {
+    if (!selectedTheme) return;
+    applyTheme(selectedTheme);
   };
 
   return (
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium hover:from-purple-600 hover:to-pink-600 transition-all shadow-md"
+        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-all shadow-md"
       >
-        <span>🎨</span>
         <span>Garden Themes</span>
       </button>
 
@@ -301,8 +313,7 @@ export default function GardenThemes() {
             
             {/* Header */}
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
-                <span className="text-3xl">🎨</span>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
                 Garden Themes
               </h2>
               <p className="text-gray-600 dark:text-gray-300 mt-2">
@@ -319,8 +330,8 @@ export default function GardenThemes() {
                     onClick={() => handleApplyTheme(theme)}
                     className={`p-4 rounded-xl border-2 transition-all text-left hover:shadow-lg ${
                       selectedTheme?.id === theme.id
-                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 bg-white dark:bg-gray-800'
+                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-600 bg-white dark:bg-gray-800'
                     }`}
                   >
                     <div className="flex items-center gap-3 mb-2">
@@ -358,16 +369,36 @@ export default function GardenThemes() {
                 }}
                 className="px-6 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirm && selectedTheme && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
+              Apply Theme?
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Are you sure? Your current garden will be erased.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowConfirm(false);
+                  setSelectedTheme(null);
+                }}
+                className="flex-1 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
                 Cancel
               </button>
               <button
                 onClick={confirmApplyTheme}
-                disabled={!selectedTheme}
-                className={`px-6 py-2 rounded-lg font-medium transition-all ${
-                  selectedTheme
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-md'
-                    : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                }`}
+                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
               >
                 Apply Theme
               </button>
