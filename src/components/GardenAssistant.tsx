@@ -399,7 +399,7 @@ Plants in garden: ${gardenPlants.length > 0 ? gardenPlants.map(p => p!.plant.nam
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Ask me anything about gardening..."
-            className="flex-1 px-4 py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+            className="flex-1 px-4 py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
           />
           <button
             onClick={handleSend}

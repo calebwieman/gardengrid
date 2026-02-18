@@ -925,7 +925,7 @@ export default function Home() {
                 
                 {/* Harmony Score */}
                 {placedPlants.length > 0 && (
-                  <div className="mb-4 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div id="harmony-score" className="mb-4 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-300">Harmony: <span className={`font-bold ${getScoreColor(score)}`}>{score}%</span></span>
                       <div className="flex gap-2 text-xs">
