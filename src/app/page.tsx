@@ -28,6 +28,8 @@ import YieldTracker from '@/components/YieldTracker';
 import RecipeSuggestions from '@/components/RecipeSuggestions';
 import GardenPhotoGallery from '@/components/GardenPhotoGallery';
 import GardenReminders from '@/components/GardenReminders';
+import GardenAchievements from '@/components/GardenAchievements';
+import MoonPhaseGardening from '@/components/MoonPhaseGardening';
 
 function DraggablePlant({ plant }: { plant: Plant }) {
   const { selectedPlantId, setSelectedPlant } = useGardenStore();
@@ -739,6 +741,9 @@ export default function Home() {
               {/* Weather Widget */}
               <WeatherWidget zone={zone} />
               
+              {/* Moon Phase Gardening */}
+              <MoonPhaseGardening />
+              
               {/* Garden Care - Soil, Watering, Pests */}
               <GardenCare />
               
@@ -774,6 +779,9 @@ export default function Home() {
               
               {/* Garden Reminders - Task notifications and scheduling */}
               <GardenReminders />
+              
+              {/* Garden Achievements - Gamification and progress tracking */}
+              <GardenAchievements />
               
               {/* Garden Stats */}
               <GardenStats placedPlants={placedPlants} />

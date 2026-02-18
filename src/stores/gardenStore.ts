@@ -104,6 +104,11 @@ interface GardenState {
   history: PlacedPlant[][];
   historyIndex: number;
   
+  // Achievement tracking
+  visitDates: string[];
+  addVisitDate: (date: string) => void;
+  completedTasks: string[];
+  
   // Garden management
   createGarden: (name?: string) => void;
   switchGarden: (id: string) => void;
@@ -194,6 +199,18 @@ export const useGardenStore = create<GardenState>()(
       soilType: null, // No soil type selected yet
       history: [],
       historyIndex: -1,
+      
+      // Achievement tracking
+      visitDates: [], // Array of date strings (YYYY-MM-DD)
+      completedTasks: [], // Array of completed task IDs
+      
+      // Add a visit date
+      addVisitDate: (date: string) => {
+        const { visitDates } = get();
+        if (!visitDates.includes(date)) {
+          set({ visitDates: [...visitDates, date] });
+        }
+      },
       
       // Create a new garden
       createGarden: (name?: string) => {
