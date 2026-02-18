@@ -178,33 +178,56 @@ export default function HomePage() {
       <section className="py-20 px-4 bg-white">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-gray-800 mb-4">
-            Free Forever
+            Simple Pricing
           </h2>
           <p className="text-xl text-gray-600 mb-8">
-            GardenGrid is free to use with all core features. 
-            No hidden fees, no ads, no account required.
+            Start free, upgrade when you're ready. No hidden fees, no ads.
           </p>
-          <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            {/* Free */}
             <div className="p-6 bg-gray-50 rounded-xl">
-              <h3 className="font-bold text-lg text-gray-800 mb-4">Free</h3>
+              <h3 className="font-bold text-lg text-gray-800 mb-2">Free</h3>
               <p className="text-3xl font-bold text-green-600 mb-4">$0</p>
-              <ul className="text-left space-y-2 text-gray-600">
-                <li>✓ Unlimited gardens</li>
+              <ul className="text-left space-y-2 text-gray-600 text-sm">
+                <li>✓ 1 garden</li>
                 <li>✓ 60+ plants</li>
-                <li>✓ All planning tools</li>
+                <li>✓ Basic planning tools</li>
                 <li>✓ Works offline</li>
                 <li>✓ Export to PNG</li>
+                <li className="text-gray-400">✗ Cloud sync</li>
+                <li className="text-gray-400">✗ AI Assistant</li>
               </ul>
             </div>
-            <div className="p-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl text-white">
-              <h3 className="font-bold text-lg mb-4">Pro (Coming Soon)</h3>
-              <p className="text-3xl font-bold mb-4">$4.99</p>
-              <ul className="text-left space-y-2 opacity-90">
+            
+            {/* Pro Monthly */}
+            <div className="p-6 bg-white rounded-xl border-2 border-green-500 relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-500 text-white px-3 py-1 text-xs font-bold rounded-full">
+                POPULAR
+              </div>
+              <h3 className="font-bold text-lg text-gray-800 mb-2">Pro Monthly</h3>
+              <p className="text-3xl font-bold text-green-600 mb-1">$4.99</p>
+              <p className="text-xs text-gray-500 mb-4">per month</p>
+              <ul className="text-left space-y-2 text-gray-600 text-sm">
+                <li>✓ Unlimited gardens</li>
+                <li>✓ All 60+ plants</li>
+                <li>✓ All planning tools</li>
+                <li>✓ Works offline</li>
                 <li>✓ Cloud backup</li>
-                <li>✓ Sync across devices</li>
                 <li>✓ AI Assistant</li>
                 <li>✓ Priority support</li>
-                <li>✓ Early access to features</li>
+              </ul>
+            </div>
+            
+            {/* Lifetime */}
+            <div className="p-6 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl text-white">
+              <h3 className="font-bold text-lg mb-2">Lifetime Pro</h3>
+              <p className="text-3xl font-bold mb-1">$49.99</p>
+              <p className="text-xs opacity-80 mb-4">one-time payment</p>
+              <ul className="text-left space-y-2 opacity-90 text-sm">
+                <li>✓ Everything in Pro</li>
+                <li>✓ Lifetime updates</li>
+                <li>✓ Early access</li>
+                <li>✓ Support the dev</li>
               </ul>
             </div>
           </div>
