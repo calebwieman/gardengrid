@@ -938,6 +938,7 @@ export default function Home() {
                         key={plant.id}
                         onClick={() => {
                           placePlantDirect(plant.id, cellPickerOpen.x, cellPickerOpen.y);
+                          setSelectedPlant(null); // Clear to prevent moving plant on next tap
                           setCellPickerOpen(null);
                         }}
                         className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
