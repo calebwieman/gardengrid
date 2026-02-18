@@ -1,26 +1,37 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 export default function AdminWaitlistPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [emails, setEmails] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
+  const [error, setError] = useState('');
+
+  const key = searchParams.get('key');
 
   useEffect(() => {
-    // Check if authenticated
-    const auth = localStorage.getItem('gardengrid_admin_auth');
-    if (!auth) {
-      router.push('/admin');
-      return;
-    }
-
-    const waitlist = JSON.parse(localStorage.getItem('gardengrid_waitlist') || '[]');
-    setEmails(waitlist);
-    setLoading(false);
-  }, [router]);
+    // Check key server-side
+    fetch(`/api/admin/verify?key=${key}`)
+      .then(res => {
+        if (!res.ok) {
+          setError('Invalid access key');
+          setLoading(false);
+          return;
+        }
+        // Key is valid, load data
+        const waitlist = JSON.parse(localStorage.getItem('gardengrid_waitlist') || '[]');
+        setEmails(waitlist);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError('Error verifying access');
+        setLoading(false);
+      });
+  }, [key]);
 
   const copyEmails = () => {
     navigator.clipboard.writeText(emails.join('\n'));
@@ -35,13 +46,20 @@ export default function AdminWaitlistPage() {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('gardengrid_admin_auth');
-    router.push('/');
-  };
-
   if (loading) {
     return <div className="min-h-screen bg-gray-50 p-8">Loading...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+          <div className="text-4xl mb-4">🔒</div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h1>
+          <p className="text-gray-600">{error}</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -65,12 +83,6 @@ export default function AdminWaitlistPage() {
             >
               Clear
             </button>
-            <button
-              onClick={logout}
-              className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium"
-            >
-              Logout
-            </button>
           </div>
         </div>
 
@@ -85,7 +97,6 @@ export default function AdminWaitlistPage() {
                 <tr>
                   <th className="text-left p-4 font-medium text-gray-600">#</th>
                   <th className="text-left p-4 font-medium text-gray-600">Email</th>
-                  <th className="text-left p-4 font-medium text-gray-600">Date</th>
                 </tr>
               </thead>
               <tbody>
@@ -93,7 +104,6 @@ export default function AdminWaitlistPage() {
                   <tr key={i} className="border-t border-gray-100">
                     <td className="p-4 text-gray-500">{i + 1}</td>
                     <td className="p-4 font-medium">{email}</td>
-                    <td className="p-4 text-gray-500">Today</td>
                   </tr>
                 ))}
               </tbody>

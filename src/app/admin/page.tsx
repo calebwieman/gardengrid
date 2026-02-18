@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function AdminLoginPage() {
@@ -9,29 +9,17 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    // Check if already authenticated
-    const auth = localStorage.getItem('gardengrid_admin_auth');
-    if (auth) {
-      router.push('/admin/waitlist');
-    }
-  }, [router]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      const response = await fetch('/api/admin/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-      });
+      const response = await fetch(`/api/admin/verify?key=${password}`);
 
       if (response.ok) {
-        localStorage.setItem('gardengrid_admin_auth', 'true');
-        router.push('/admin/waitlist');
+        // Redirect to waitlist with key as query param
+        router.push(`/admin/waitlist?key=${encodeURIComponent(password)}`);
       } else {
         setError('Invalid password');
       }
