@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { priceId, successUrl, cancelUrl } = await request.json();
+    const { priceId, successUrl, cancelUrl, trialDays = 7 } = await request.json();
 
     // Validate price ID
     const validPriceIds = [PRICE_IDS.monthly, PRICE_IDS.lifetime];
@@ -21,8 +21,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const isSubscription = priceId === PRICE_IDS.monthly;
+
     // Create checkout session
-    const session = await stripe.checkout.sessions.create({
+    const sessionConfig: any = {
       payment_method_types: ['card'],
       line_items: [
         {
@@ -30,10 +32,19 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      mode: priceId === PRICE_IDS.monthly ? 'subscription' : 'payment',
+      mode: isSubscription ? 'subscription' : 'payment',
       success_url: successUrl || `${process.env.NEXT_PUBLIC_URL}/?payment=success`,
       cancel_url: cancelUrl || `${process.env.NEXT_PUBLIC_URL}/?payment=cancelled`,
-    });
+    };
+
+    // Add 7-day trial for monthly subscriptions
+    if (isSubscription && trialDays > 0) {
+      sessionConfig.subscription_data = {
+        trial_period_days: trialDays,
+      };
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     return NextResponse.json({ sessionId: session.id, url: session.url });
   } catch (error) {
