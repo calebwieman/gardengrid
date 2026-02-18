@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { DndContext, DragEndEvent, DragOverlay, useSensor, useSensors, PointerSensor, useDraggable, useDroppable } from '@dnd-kit/core';
+import { useState, useMemo, useEffect } from 'react';
+import { DndContext, DragEndEvent, DragOverlay, useSensor, useSensors, PointerSensor, useDraggable, useDroppable, TouchSensor } from '@dnd-kit/core';
 import { useGardenStore, PlacedPlant } from '@/stores/gardenStore';
 import { plants, getPlantById, Plant } from '@/lib/plants';
 import PlantingCalendar from '@/components/PlantingCalendar';
@@ -9,6 +9,7 @@ import SaveIndicator from '@/components/SaveIndicator';
 import GardenStats from '@/components/GardenStats';
 import GardenTips from '@/components/GardenTips';
 import GardenTemplates from '@/components/GardenTemplates';
+import WelcomeModal from '@/components/WelcomeModal';
 
 function DraggablePlant({ plant }: { plant: Plant }) {
   const { selectedPlantId, setSelectedPlant } = useGardenStore();
@@ -288,7 +289,13 @@ export default function Home() {
     setSelectedPlant, 
     clearGarden, 
     placedPlants, 
-    placePlant 
+    placePlant,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    exportGarden,
+    importGarden,
   } = useGardenStore();
   const [activePlant, setActivePlant] = useState<Plant | null>(null);
   const [showRelationships, setShowRelationships] = useState(true);
@@ -314,6 +321,12 @@ export default function Home() {
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200,
+        tolerance: 8,
       },
     })
   );
@@ -342,6 +355,53 @@ export default function Home() {
       }
     }
   };
+  
+  // Export garden to file
+  const handleExport = () => {
+    const json = exportGarden();
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${gardenName.replace(/\s+/g, '-').toLowerCase()}-garden.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  
+  // Import garden from file
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const json = event.target?.result as string;
+      const success = importGarden(json);
+      if (!success) {
+        alert('Failed to import garden. Please check the file format.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // Reset input
+  };
+  
+  const [isMobile, setIsMobile] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  
+  // Check for mobile viewport
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  // Close mobile menu when selecting a plant on mobile
+  useEffect(() => {
+    if (isMobile && selectedPlantId) {
+      setShowMobileMenu(false);
+    }
+  }, [selectedPlantId, isMobile]);
   
   // Get score color
   const getScoreColor = (s: number) => {
@@ -372,29 +432,43 @@ export default function Home() {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <main className="min-h-screen p-8">
+      <WelcomeModal />
+      <main className="min-h-screen p-4 md:p-8 bg-gradient-to-b from-green-50 to-white">
         <div className="max-w-6xl mx-auto">
-          <header className="mb-8">
-            <div className="flex items-center gap-4 mb-2">
-              <h1 className="text-3xl font-bold text-green-800">🌱 GardenGrid</h1>
+          {/* Header */}
+          <header className="mb-6 md:mb-8">
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-2xl md:text-3xl font-bold text-green-800">🌱 GardenGrid</h1>
               <input
                 type="text"
                 value={gardenName}
                 onChange={(e) => setGardenName(e.target.value)}
-                className="text-xl font-semibold text-gray-700 bg-transparent border-b-2 border-gray-300 focus:border-green-500 focus:outline-none px-2 py-1"
+                className="text-lg md:text-xl font-semibold text-gray-700 bg-transparent border-b-2 border-gray-300 focus:border-green-500 focus:outline-none px-2 py-1 flex-1 max-w-xs"
                 placeholder="Garden name..."
               />
+              {/* Mobile menu toggle */}
+              {isMobile && (
+                <button
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
+                  className="md:hidden p-2 bg-green-500 text-white rounded-lg"
+                >
+                  {showMobileMenu ? '✕' : '☰'}
+                </button>
+              )}
             </div>
-            <p className="text-gray-600">
+            <p className="text-gray-600 text-sm md:text-base">
               Drag plants onto the grid. Green lines = good companions, Red dashed = bad neighbors!
             </p>
           </header>
           
-          <div className="flex gap-8">
+          {/* Main content - responsive layout */}
+          <div className={`flex flex-col md:flex-row gap-4 md:gap-8 ${isMobile && !showMobileMenu ? 'hidden' : ''}`}>
             {/* Plant Selector Sidebar */}
-            <aside className="w-64 flex-shrink-0 space-y-4">
-              <div className="bg-white rounded-lg shadow-md p-4">
-                <h2 className="font-semibold text-gray-700 mb-4">Plants</h2>
+            <aside className={`w-full md:w-64 flex-shrink-0 space-y-4 ${isMobile ? 'order-2' : ''}`}>
+              <div className="bg-white rounded-xl shadow-md p-4">
+                <h2 className="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                  <span className="text-xl">🪴</span> Plants
+                </h2>
                 
                 {/* Search */}
                 <div className="mb-3">
@@ -424,7 +498,7 @@ export default function Home() {
                   ))}
                 </div>
                 
-                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-48 md:max-h-80 overflow-y-auto pr-1">
                   {filteredPlants.map((plant) => (
                     <DraggablePlant key={plant.id} plant={plant} />
                   ))}
@@ -475,6 +549,45 @@ export default function Home() {
                 </button>
               </div>
               
+              {/* Undo/Redo */}
+              <div className="flex gap-2">
+                <button
+                  onClick={undo}
+                  disabled={!canUndo()}
+                  className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="Undo (Ctrl+Z)"
+                >
+                  ↩️ Undo
+                </button>
+                <button
+                  onClick={redo}
+                  disabled={!canRedo()}
+                  className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="Redo (Ctrl+Y)"
+                >
+                  ↪️ Redo
+                </button>
+              </div>
+              
+              {/* Export/Import */}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleExport}
+                  className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+                >
+                  📥 Export
+                </button>
+                <label className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-center cursor-pointer">
+                  📤 Import
+                  <input 
+                    type="file" 
+                    accept=".json" 
+                    onChange={handleImport} 
+                    className="hidden" 
+                  />
+                </label>
+              </div>
+              
               {/* Garden Templates */}
               <GardenTemplates />
               
@@ -489,22 +602,24 @@ export default function Home() {
             </aside>
             
             {/* Garden Grid */}
-            <div className="flex-1">
-              <div className="bg-white rounded-lg shadow-md p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <div className="flex items-center gap-4">
-                    <h2 className="font-semibold text-gray-700">My Garden</h2>
+            <div className="flex-1 order-1 md:order-2">
+              <div className="bg-white rounded-xl shadow-md p-3 md:p-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                  <div className="flex items-center gap-3">
+                    <h2 className="font-semibold text-gray-700 flex items-center gap-2">
+                      <span className="text-xl">🌿</span> My Garden
+                    </h2>
                     <select
                       value={gridSize}
                       onChange={(e) => setGridSize(Number(e.target.value))}
                       className="text-sm bg-gray-100 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:border-green-500"
                     >
-                      <option value={4}>4×4 (16 sq ft)</option>
-                      <option value={8}>8×8 (64 sq ft)</option>
-                      <option value={12}>12×12 (144 sq ft)</option>
+                      <option value={4}>4×4</option>
+                      <option value={8}>8×8</option>
+                      <option value={12}>12×12</option>
                     </select>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <span className="text-sm text-gray-500">{placedPlants.length} plants</span>
                     <SaveIndicator />
                   </div>
@@ -513,12 +628,12 @@ export default function Home() {
                 {/* Compatibility Score */}
                 {placedPlants.length > 0 && (
                   <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                       <div>
                         <span className="text-sm text-gray-600">Garden Harmony: </span>
                         <span className={`text-2xl font-bold ${getScoreColor(score)}`}>{score}%</span>
                       </div>
-                      <div className="flex gap-4 text-sm">
+                      <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm">
                         <span className="text-green-600">✓ {companionCount} companions</span>
                         <span className="text-red-600">✗ {antagonistCount} conflicts</span>
                         {spacingWarnings > 0 && <span className="text-orange-500">⚠ {spacingWarnings} spacing</span>}
@@ -535,14 +650,18 @@ export default function Home() {
                 )}
                 
                 {/* Grid with relationship lines */}
-                <div className="relative">
+                <div className="relative overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0">
                   <div 
-                    className="grid gap-1 bg-gray-200 p-1 rounded"
-                    style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)` }}
+                    className="grid gap-1 bg-gray-200 p-1 rounded mx-auto"
+                    style={{ 
+                      gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
+                      maxWidth: '100%',
+                      width: 'fit-content'
+                    }}
                   >
                     {gridCells}
                   </div>
-                  <RelationshipLines relationships={relationships} cellSize={gridSize === 4 ? 100 : gridSize === 8 ? 50 : 35} />
+                  <RelationshipLines relationships={relationships} cellSize={isMobile ? (gridSize === 4 ? 60 : gridSize === 8 ? 35 : 28) : gridSize === 4 ? 100 : gridSize === 8 ? 50 : 35} />
                 </div>
                 
                 <p className="mt-4 text-sm text-gray-500 text-center">

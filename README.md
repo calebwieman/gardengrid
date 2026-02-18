@@ -43,6 +43,7 @@ src/
 - [x] Iteration 8: Auto-save to localStorage + save indicator toast
 - [x] Iteration 9: Spacing warnings + garden stats + growing tips
 - [x] Iteration 10: Garden templates + 45+ plants database
+- [x] Iteration 11: Mobile responsiveness + welcome modal + UI polish
 
 ## Features (Coming Soon)
 
