@@ -14,7 +14,6 @@ export default function CropRotationPlanner() {
     clearRotationHistory 
   } = useGardenStore();
   
-  const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'warnings' | 'suggestions' | 'history'>('warnings');
   
   const currentYear = new Date().getFullYear();
@@ -34,12 +33,9 @@ export default function CropRotationPlanner() {
   };
   
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-      {/* Header */}
-      <div 
-        className="bg-gradient-to-r from-amber-600 to-orange-600 p-4 cursor-pointer"
-        onClick={() => setIsOpen(!isOpen)}
-      >
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+      {/* Header - Always Expanded */}
+      <div className="bg-gradient-to-r from-amber-600 to-orange-600 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-2xl">🔄</span>
@@ -48,35 +44,29 @@ export default function CropRotationPlanner() {
               <p className="text-amber-100 text-sm">Plan next year's garden with smart rotations</p>
             </div>
           </div>
-          <span className={`text-white text-2xl transition-transform ${isOpen ? 'rotate-180' : ''}`}>
-            ▼
-          </span>
         </div>
         
         {/* Quick Stats */}
-        {!isOpen && (
-          <div className="mt-3 flex gap-4 text-sm">
-            {warnings.length > 0 ? (
-              <span className="bg-red-500 text-white px-2 py-1 rounded-full">
-                ⚠️ {warnings.length} rotation warning{warnings.length !== 1 ? 's' : ''}
-              </span>
-            ) : (
-              <span className="bg-green-500 text-white px-2 py-1 rounded-full">
-                ✅ No issues
-              </span>
-            )}
-            {years.length > 0 && (
-              <span className="bg-blue-500 text-white px-2 py-1 rounded-full">
-                📅 {years.length} year{years.length !== 1 ? 's' : ''} tracked
-              </span>
-            )}
-          </div>
-        )}
+        <div className="mt-3 flex gap-4 text-sm">
+          {warnings.length > 0 ? (
+            <span className="bg-red-500 text-white px-2 py-1 rounded-full">
+              ⚠️ {warnings.length} rotation warning{warnings.length !== 1 ? 's' : ''}
+            </span>
+          ) : (
+            <span className="bg-green-500 text-white px-2 py-1 rounded-full">
+              ✅ No issues
+            </span>
+          )}
+          {years.length > 0 && (
+            <span className="bg-blue-500 text-white px-2 py-1 rounded-full">
+              📅 {years.length} year{years.length !== 1 ? 's' : ''} tracked
+            </span>
+          )}
+        </div>
       </div>
       
       {/* Content */}
-      {isOpen && (
-        <div className="p-4">
+      <div className="p-4">
           {/* Tabs */}
           <div className="flex border-b border-gray-200 mb-4">
             <button
@@ -264,7 +254,6 @@ export default function CropRotationPlanner() {
             )}
           </div>
         </div>
-      )}
     </div>
   );
 }
