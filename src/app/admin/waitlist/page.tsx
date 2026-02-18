@@ -1,15 +1,26 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function AdminPage() {
+export default function AdminWaitlistPage() {
   const [emails, setEmails] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
+    // Check if authenticated
+    const auth = localStorage.getItem('gardengrid_admin_auth');
+    if (!auth) {
+      router.push('/admin');
+      return;
+    }
+
     const waitlist = JSON.parse(localStorage.getItem('gardengrid_waitlist') || '[]');
     setEmails(waitlist);
-  }, []);
+    setLoading(false);
+  }, [router]);
 
   const copyEmails = () => {
     navigator.clipboard.writeText(emails.join('\n'));
@@ -23,6 +34,15 @@ export default function AdminPage() {
       setEmails([]);
     }
   };
+
+  const logout = () => {
+    localStorage.removeItem('gardengrid_admin_auth');
+    router.push('/');
+  };
+
+  if (loading) {
+    return <div className="min-h-screen bg-gray-50 p-8">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -45,6 +65,12 @@ export default function AdminPage() {
             >
               Clear
             </button>
+            <button
+              onClick={logout}
+              className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium"
+            >
+              Logout
+            </button>
           </div>
         </div>
 
@@ -59,6 +85,7 @@ export default function AdminPage() {
                 <tr>
                   <th className="text-left p-4 font-medium text-gray-600">#</th>
                   <th className="text-left p-4 font-medium text-gray-600">Email</th>
+                  <th className="text-left p-4 font-medium text-gray-600">Date</th>
                 </tr>
               </thead>
               <tbody>
@@ -66,6 +93,7 @@ export default function AdminPage() {
                   <tr key={i} className="border-t border-gray-100">
                     <td className="p-4 text-gray-500">{i + 1}</td>
                     <td className="p-4 font-medium">{email}</td>
+                    <td className="p-4 text-gray-500">Today</td>
                   </tr>
                 ))}
               </tbody>
