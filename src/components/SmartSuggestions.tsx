@@ -70,7 +70,7 @@ export default function SmartSuggestions({ cellX, cellY, placedPlants }: SmartSu
         });
 
         // Bonus for plants that add diversity
-        if (companpanionCount > 0 && antagonistCount === 0) {
+        if (companionCount > 0 && antagonistCount === 0) {
           reasons.unshift('⭐ Great companion!');
         }
 

@@ -85,13 +85,14 @@ function DraggablePlant({ plant }: { plant: Plant }) {
   );
 }
 
-function DroppableCell({ x, y, showRelationships, relationships, onViewDetails, isMobile }: { 
+function DroppableCell({ x, y, showRelationships, relationships, onViewDetails, isMobile, onHover }: { 
   x: number; 
   y: number;
   showRelationships: boolean;
   relationships: { type: 'companion' | 'antagonist' | 'spacing'; fromX: number; fromY: number; toX: number; toY: number }[];
   onViewDetails?: (plant: Plant, x: number, y: number) => void;
   isMobile: boolean;
+  onHover?: (x: number, y: number) => void;
 }) {
   const { placedPlants, selectedPlantId, placePlant, removePlant, updatePlantStage } = useGardenStore();
   
@@ -134,6 +135,8 @@ function DroppableCell({ x, y, showRelationships, relationships, onViewDetails, 
       ref={setNodeRef}
       onClick={handleClick}
       onContextMenu={handleViewDetails}
+      onMouseEnter={() => onHover?.(x, y)}
+      onMouseLeave={() => onHover?.(-1, -1)}
       className={`aspect-square rounded-sm md:rounded cursor-pointer transition-all flex items-center justify-center text-xl md:text-2xl relative group touch-manipulation
         ${isOver && selectedPlantId ? 'ring-2 ring-green-400 ring-inset' : ''}
         ${plantData 
@@ -373,6 +376,7 @@ export default function Home() {
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'vegetable' | 'herb' | 'fruit'>('all');
   const [selectedPlacedPlant, setSelectedPlacedPlant] = useState<{plant: Plant; x: number; y: number} | null>(null);
   const [darkMode, setDarkMode] = useState(false);
+  const [hoveredCell, setHoveredCell] = useState<{ x: number; y: number } | null>(null);
   
   // Toggle dark mode on document
   useEffect(() => {
@@ -539,6 +543,7 @@ export default function Home() {
           relationships={relationships}
           onViewDetails={(plant, px, py) => setSelectedPlacedPlant({ plant, x: px, y: py })}
           isMobile={isMobile}
+          onHover={(cx, cy) => setHoveredCell(cx >= 0 ? { x: cx, y: cy } : null)}
         />
       );
     }
@@ -551,49 +556,40 @@ export default function Home() {
       onDragEnd={handleDragEnd}
     >
       <WelcomeModal />
-      <main className="min-h-screen p-4 md:p-8 bg-gradient-to-b from-green-50 to-white dark:from-green-900 dark:to-gray-900 transition-colors">
+      <main className="min-h-screen p-3 md:p-8 bg-gradient-to-b from-green-50 to-white dark:from-green-900 dark:to-gray-900 transition-colors">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <header className="mb-6 md:mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-2xl md:text-3xl font-bold text-green-800 dark:text-green-400">🌱 GardenGrid</h1>
+          <header className="mb-4 md:mb-8">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <h1 className="text-xl md:text-3xl font-bold text-green-800 dark:text-green-400">🌱 GardenGrid</h1>
               <input
                 type="text"
                 value={gardenName}
                 onChange={(e) => setGardenName(e.target.value)}
-                className="text-lg md:text-xl font-semibold text-gray-700 dark:text-gray-200 bg-transparent border-b-2 border-gray-300 dark:border-gray-600 focus:border-green-500 focus:outline-none px-2 py-1 flex-1 max-w-xs"
+                className="text-sm md:text-xl font-semibold text-gray-700 dark:text-gray-200 bg-transparent border-b-2 border-gray-300 dark:border-gray-600 focus:border-green-500 focus:outline-none px-2 py-1 flex-1 min-w-[120px] max-w-xs"
                 placeholder="Garden name..."
               />
-              {/* Mobile menu toggle */}
-              {isMobile && (
-                <button
-                  onClick={() => setShowMobileMenu(!showMobileMenu)}
-                  className="md:hidden p-2 bg-green-500 text-white rounded-lg"
-                >
-                  {showMobileMenu ? '✕' : '☰'}
-                </button>
-              )}
-              {/* Dark mode toggle */}
+              {/* Dark mode toggle - always visible */}
               <button
                 onClick={() => setDarkMode(!darkMode)}
-                className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex-shrink-0"
                 title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 {darkMode ? '☀️' : '🌙'}
               </button>
             </div>
-            <p className="text-gray-600 dark:text-gray-300 text-sm md:text-base">
-              Drag plants onto the grid. Green lines = good companions, Red dashed = bad neighbors!
+            <p className="text-gray-600 dark:text-gray-300 text-xs md:text-base">
+              Drag plants onto the grid. Green = companions, Red = avoid!
             </p>
           </header>
           
           {/* Main content - responsive layout */}
-          <div className={`flex flex-col md:flex-row gap-4 md:gap-8 ${isMobile && !showMobileMenu ? 'hidden' : ''}`}>
-            {/* Plant Selector Sidebar */}
-            <aside className={`w-full md:w-64 flex-shrink-0 space-y-4 ${isMobile ? 'order-2' : ''}`}>
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
-                <h2 className="font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
-                  <span className="text-xl">🪴</span> Plants
+          <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+            {/* Plant Selector Sidebar - always visible on mobile now */}
+            <aside className="w-full md:w-64 flex-shrink-0 space-y-4">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-3 md:p-4">
+                <h2 className="font-semibold text-gray-700 dark:text-gray-200 mb-3 flex items-center gap-2">
+                  <span className="text-lg">🪴</span> Plants
                 </h2>
                 
                 {/* Search */}
@@ -608,23 +604,23 @@ export default function Home() {
                 </div>
                 
                 {/* Category Filter */}
-                <div className="flex gap-1 mb-4">
+                <div className="flex flex-wrap gap-1 mb-3">
                   {(['all', 'vegetable', 'herb', 'fruit'] as const).map(cat => (
                     <button
                       key={cat}
                       onClick={() => setCategoryFilter(cat)}
-                      className={`flex-1 px-2 py-1 text-xs rounded-full transition-colors ${
+                      className={`px-2 py-1 text-xs rounded-full transition-colors ${
                         categoryFilter === cat
                           ? 'bg-green-500 text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          : 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-200 hover:bg-gray-200'
                       }`}
                     >
-                      {cat === 'all' ? '🌱 All' : cat === 'vegetable' ? '🥬 Veg' : cat === 'herb' ? '🌿 Herb' : '🍓 Fruit'}
+                      {cat === 'all' ? '🌱 All' : cat === 'vegetable' ? '🥬' : cat === 'herb' ? '🌿' : '🍓'}
                     </button>
                   ))}
                 </div>
                 
-                <div className="space-y-2 max-h-48 md:max-h-80 overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-40 md:max-h-80 overflow-y-auto pr-1">
                   {filteredPlants.map((plant) => (
                     <DraggablePlant key={plant.id} plant={plant} />
                   ))}
@@ -654,6 +650,13 @@ export default function Home() {
                   </div>
                 )}
               </div>
+              
+              {/* Smart Plant Suggestions */}
+              <SmartSuggestions 
+                cellX={hoveredCell?.x}
+                cellY={hoveredCell?.y}
+                placedPlants={placedPlants}
+              />
               
               {/* Actions */}
               <div className="flex gap-2">
