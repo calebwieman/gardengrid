@@ -846,6 +846,64 @@ export default function Home() {
               </div>
             </div>
           </div>
+          
+          {/* Mobile Cell Plant Picker Modal */}
+          {cellPickerOpen && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-end md:items-center justify-center">
+              <div className="bg-white dark:bg-gray-800 w-full md:w-96 md:max-w-[90vw] md:rounded-2xl rounded-t-2xl max-h-[70vh] overflow-hidden">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                  <h3 className="font-semibold text-gray-800 dark:text-white">Pick a Plant</h3>
+                  <button onClick={() => setCellPickerOpen(null)} className="text-gray-500 text-xl">✕</button>
+                </div>
+                
+                {/* Category tabs */}
+                <div className="flex gap-2 p-3 overflow-x-auto">
+                  {(['all', 'vegetable', 'herb', 'fruit'] as const).map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setCellPickerCategory(cat)}
+                      className={`px-3 py-1.5 text-sm rounded-full whitespace-nowrap ${
+                        cellPickerCategory === cat
+                          ? 'bg-green-500 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                      }`}
+                    >
+                      {cat === 'all' ? '🌱 All' : cat === 'vegetable' ? '🥬 Veg' : cat === 'herb' ? '🌿 Herb' : '🍓 Fruit'}
+                    </button>
+                  ))}
+                </div>
+                
+                {/* Plant grid */}
+                <div className="p-3 overflow-y-auto max-h-80">
+                  <div className="grid grid-cols-4 gap-2">
+                    {plants.filter(p => cellPickerCategory === 'all' || p.category === cellPickerCategory).slice(0, 20).map((plant) => (
+                      <button
+                        key={plant.id}
+                        onClick={() => {
+                          setSelectedPlant(plant.id);
+                          placePlant(cellPickerOpen.x, cellPickerOpen.y);
+                          setCellPickerOpen(null);
+                        }}
+                        className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        <span className="text-2xl">{plant.emoji}</span>
+                        <span className="text-xs text-gray-600 dark:text-gray-300 mt-1">{plant.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="p-3 border-t border-gray-200 dark:border-gray-700">
+                  <button 
+                    onClick={() => setCellPickerOpen(null)}
+                    className="w-full py-2 text-gray-500 text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </>
           )}
         </div>
