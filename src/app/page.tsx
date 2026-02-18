@@ -21,6 +21,7 @@ import PestTracker from '@/components/PestTracker';
 import CropRotationPlanner from '@/components/CropRotationPlanner';
 import GardenShare from '@/components/GardenShare';
 import GardenTasks from '@/components/GardenTasks';
+import GardenAnalytics from '@/components/GardenAnalytics';
 
 function DraggablePlant({ plant }: { plant: Plant }) {
   const { selectedPlantId, setSelectedPlant } = useGardenStore();
@@ -743,6 +744,9 @@ export default function Home() {
               
               {/* Monthly Garden Tasks */}
               <GardenTasks />
+              
+              {/* Garden Analytics Dashboard */}
+              <GardenAnalytics placedPlants={placedPlants} />
               
               {/* Planting Calendar */}
               <PlantingCalendar placedPlants={placedPlants} />
