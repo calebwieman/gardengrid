@@ -579,10 +579,11 @@ export const useGardenStore = create<GardenState>()(
           };
           get().setPlacedPlants(newPlants);
         } else {
-          const newPlants: PlacedPlant[] = [
+          // Add new plant - MUST spread existing plants to keep them!
+          get().setPlacedPlants([
+            ...placedPlants,
             { id: `${selectedPlantId}-${x}-${y}`, plantId: selectedPlantId, x, y, plantedAt: now, stage: 'seedling' },
-          ];
-          get().setPlacedPlants(newPlants);
+          ]);
         }
       },
       
