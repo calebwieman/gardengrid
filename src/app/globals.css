@@ -103,3 +103,48 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     touch-action: manipulation;
   }
 }
+
+/* Print-friendly styles */
+@media print {
+  /* Hide interactive elements */
+  button, 
+  .no-print,
+  aside,
+  header p,
+  footer {
+    display: none !important;
+  }
+  
+  /* Simplify the layout for printing */
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  main {
+    padding: 0 !important;
+  }
+  
+  /* Make grid more visible */
+  .grid {
+    border: 2px solid #333 !important;
+  }
+  
+  /* Ensure plant emojis are visible */
+  [class*="aspect-square"] {
+    border: 1px solid #ccc !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  
+  /* Show plant colors when printing */
+  [style*="background-color"] {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  
+  /* Add page break avoidance */
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+}

@@ -2,11 +2,15 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Plant } from '@/lib/plants';
 
+export type PlantStage = 'seedling' | 'growing' | 'ready';
+
 export interface PlacedPlant {
   id: string;
   plantId: string;
   x: number;
   y: number;
+  plantedAt?: string; // ISO date string when plant was placed
+  stage?: PlantStage; // Current growth stage
 }
 
 interface GardenState {
@@ -96,18 +100,21 @@ export const useGardenStore = create<GardenState>()(
         if (!selectedPlantId) return;
         
         const existingIndex = placedPlants.findIndex(p => p.x === x && p.y === y);
+        const now = new Date().toISOString();
         
         if (existingIndex >= 0) {
           const newPlants = [...placedPlants];
           newPlants[existingIndex] = {
             ...newPlants[existingIndex],
             plantId: selectedPlantId,
+            plantedAt: now,
+            stage: 'seedling',
           };
           get().setPlacedPlants(newPlants);
         } else {
           const newPlants = [
             ...placedPlants,
-            { id: `${selectedPlantId}-${x}-${y}`, plantId: selectedPlantId, x, y },
+            { id: `${selectedPlantId}-${x}-${y}`, plantId: selectedPlantId, x, y, plantedAt: now, stage: 'seedling' },
           ];
           get().setPlacedPlants(newPlants);
         }
@@ -116,6 +123,15 @@ export const useGardenStore = create<GardenState>()(
       removePlant: (x, y) => {
         const { placedPlants } = get();
         get().setPlacedPlants(placedPlants.filter(p => !(p.x === x && p.y === y)));
+      },
+      
+      // Update plant stage (seedling → growing → ready)
+      updatePlantStage: (x: number, y: number, stage: PlantStage) => {
+        const { placedPlants } = get();
+        const newPlants = placedPlants.map(p => 
+          p.x === x && p.y === y ? { ...p, stage } : p
+        );
+        get().setPlacedPlants(newPlants);
       },
       
       clearGarden: () => {
@@ -162,7 +178,7 @@ export const useGardenStore = create<GardenState>()(
           size: gridSize,
           plants: placedPlants,
           exportedAt: new Date().toISOString(),
-          version: '1.0',
+          version: '1.1',
         }, null, 2);
       },
       

@@ -44,6 +44,7 @@ src/
 - [x] Iteration 9: Spacing warnings + garden stats + growing tips
 - [x] Iteration 10: Garden templates + 45+ plants database
 - [x] Iteration 11: Mobile responsiveness + welcome modal + UI polish
+- [x] Iteration 12: Plant lifecycle tracking (seedling → growing → ready) + harvest date predictions + 60+ plants
 
 ## Features (Coming Soon)
 

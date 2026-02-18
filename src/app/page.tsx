@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { DndContext, DragEndEvent, DragOverlay, useSensor, useSensors, PointerSensor, useDraggable, useDroppable, TouchSensor } from '@dnd-kit/core';
-import { useGardenStore, PlacedPlant } from '@/stores/gardenStore';
+import { useGardenStore, PlacedPlant, PlantStage } from '@/stores/gardenStore';
 import { plants, getPlantById, Plant } from '@/lib/plants';
 import PlantingCalendar from '@/components/PlantingCalendar';
 import SaveIndicator from '@/components/SaveIndicator';
@@ -10,6 +10,7 @@ import GardenStats from '@/components/GardenStats';
 import GardenTips from '@/components/GardenTips';
 import GardenTemplates from '@/components/GardenTemplates';
 import WelcomeModal from '@/components/WelcomeModal';
+import PlantDetailsModal from '@/components/PlantDetailsModal';
 
 function DraggablePlant({ plant }: { plant: Plant }) {
   const { selectedPlantId, setSelectedPlant } = useGardenStore();
@@ -64,13 +65,14 @@ function DraggablePlant({ plant }: { plant: Plant }) {
   );
 }
 
-function DroppableCell({ x, y, showRelationships, relationships }: { 
+function DroppableCell({ x, y, showRelationships, relationships, onViewDetails }: { 
   x: number; 
   y: number;
   showRelationships: boolean;
   relationships: { type: 'companion' | 'antagonist' | 'spacing'; fromX: number; fromY: number; toX: number; toY: number }[];
+  onViewDetails?: (plant: Plant, x: number, y: number) => void;
 }) {
-  const { placedPlants, selectedPlantId, placePlant, removePlant } = useGardenStore();
+  const { placedPlants, selectedPlantId, placePlant, removePlant, updatePlantStage } = useGardenStore();
   
   const placedPlant = placedPlants.find(p => p.x === x && p.y === y);
   const plantData = placedPlant ? getPlantById(placedPlant.plantId) : null;
@@ -82,9 +84,22 @@ function DroppableCell({ x, y, showRelationships, relationships }: {
   
   const handleClick = () => {
     if (placedPlant) {
-      removePlant(x, y);
+      // Cycle through stages: seedling → growing → ready → seedling
+      const stages: PlantStage[] = ['seedling', 'growing', 'ready'];
+      const currentStage = placedPlant.stage || 'seedling';
+      const currentIndex = stages.indexOf(currentStage);
+      const nextStage = stages[(currentIndex + 1) % stages.length];
+      updatePlantStage(x, y, nextStage);
     } else if (selectedPlantId) {
       placePlant(x, y);
+    }
+  };
+  
+  // Handle view details (e.g., on right-click or modifier+click)
+  const handleViewDetails = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (plantData && onViewDetails) {
+      onViewDetails(plantData, x, y);
     }
   };
   
@@ -97,7 +112,8 @@ function DroppableCell({ x, y, showRelationships, relationships }: {
     <div
       ref={setNodeRef}
       onClick={handleClick}
-      className={`aspect-square rounded cursor-pointer transition-all flex items-center justify-center text-2xl relative
+      onContextMenu={handleViewDetails}
+      className={`aspect-square rounded cursor-pointer transition-all flex items-center justify-center text-2xl relative group
         ${isOver && selectedPlantId ? 'ring-2 ring-green-400 ring-inset' : ''}
         ${plantData 
           ? '' 
@@ -109,9 +125,36 @@ function DroppableCell({ x, y, showRelationships, relationships }: {
       style={{ 
         backgroundColor: plantData ? plantData.color + '40' : undefined,
       }}
-      title={plantData ? plantData.name : (selectedPlantId ? 'Drop to plant' : 'Select a plant first')}
+      title={plantData ? `${plantData.name} - Click to change stage` : (selectedPlantId ? 'Drop to plant' : 'Select a plant first')}
     >
       {plantData?.emoji}
+      
+      {/* Stage indicator */}
+      {plantData && placedPlant?.stage && (
+        <div 
+          className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 text-xs px-1.5 py-0.5 rounded-full font-medium pointer-events-none ${
+            placedPlant.stage === 'seedling' ? 'bg-yellow-100 text-yellow-700' :
+            placedPlant.stage === 'growing' ? 'bg-blue-100 text-blue-700' :
+            'bg-green-100 text-green-700'
+          }`}
+        >
+          {placedPlant.stage === 'seedling' ? '🌱' : placedPlant.stage === 'growing' ? '🌿' : '✨'}
+        </div>
+      )}
+      
+      {/* Info button for placed plants */}
+      {plantData && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleViewDetails(e);
+          }}
+          className="absolute top-0.5 right-0.5 w-5 h-5 bg-white/90 hover:bg-white rounded-full flex items-center justify-center text-xs shadow opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto"
+          title="View details (right-click)"
+        >
+          ℹ️
+        </button>
+      )}
       
       {/* Relationship indicators */}
       {showRelationships && cellRelationships.length > 0 && (
@@ -181,7 +224,26 @@ function RelationshipLines({
   );
 }
 
-// Calculate relationships and compatibility score
+// Calculate harvest date from planted date and days to maturity
+function calculateHarvestDate(plantedAt: string | undefined, daysToMaturity: number): string | null {
+  if (!plantedAt) return null;
+  const planted = new Date(plantedAt);
+  const harvest = new Date(planted);
+  harvest.setDate(harvest.getDate() + daysToMaturity);
+  return harvest.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// Calculate days until harvest
+function daysUntilHarvest(plantedAt: string | undefined, daysToMaturity: number): number | null {
+  if (!plantedAt) return null;
+  const planted = new Date(plantedAt);
+  const harvest = new Date(planted);
+  harvest.setDate(harvest.getDate() + daysToMaturity);
+  const now = new Date();
+  const diffTime = harvest.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+}
 function useGardenRelationships(placedPlants: PlacedPlant[]) {
   return useMemo(() => {
     const relationships: { type: 'companion' | 'antagonist' | 'spacing'; fromX: number; fromY: number; toX: number; toY: number }[] = [];
@@ -290,6 +352,8 @@ export default function Home() {
     clearGarden, 
     placedPlants, 
     placePlant,
+    removePlant,
+    updatePlantStage,
     undo,
     redo,
     canUndo,
@@ -301,6 +365,7 @@ export default function Home() {
   const [showRelationships, setShowRelationships] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'vegetable' | 'herb' | 'fruit'>('all');
+  const [selectedPlacedPlant, setSelectedPlacedPlant] = useState<{plant: Plant; x: number; y: number} | null>(null);
   
   const { relationships, score, companionCount, antagonistCount, spacingWarnings } = useGardenRelationships(placedPlants);
   
@@ -421,6 +486,7 @@ export default function Home() {
           y={y} 
           showRelationships={showRelationships}
           relationships={relationships}
+          onViewDetails={(plant, px, py) => setSelectedPlacedPlant({ plant, x: px, y: py })}
         />
       );
     }
@@ -597,6 +663,68 @@ export default function Home() {
               {/* Garden Stats */}
               <GardenStats placedPlants={placedPlants} />
               
+              {/* Plant Stage Legend */}
+              {placedPlants.length > 0 && (
+                <div className="bg-white rounded-xl shadow-md p-4">
+                  <h3 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <span>📅</span> Growth Stages
+                  </h3>
+                  <p className="text-xs text-gray-500 mb-3">Click a plant to advance its stage</p>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs">🌱 Seedling</span>
+                      <span className="text-gray-500">Just planted</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">🌿 Growing</span>
+                      <span className="text-gray-500">Mid-growth</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">✨ Ready</span>
+                      <span className="text-gray-500">Time to harvest!</span>
+                    </div>
+                  </div>
+                  
+                  {/* Harvest predictions */}
+                  <div className="mt-4 pt-3 border-t border-gray-100">
+                    <h4 className="font-medium text-gray-700 mb-2">📆 Harvest Timeline</h4>
+                    <div className="space-y-1 text-xs">
+                      {(() => {
+                        // Group plants by harvest date
+                        const byDate: Record<string, { plant: Plant; stage: PlantStage | undefined }[]> = {};
+                        placedPlants.forEach(p => {
+                          const plantData = getPlantById(p.plantId);
+                          if (!plantData) return;
+                          const days = daysUntilHarvest(p.plantedAt, plantData.daysToMaturity);
+                          const key = days === null ? 'unknown' : days <= 0 ? 'ready' : `in ${days} days`;
+                          if (!byDate[key]) byDate[key] = [];
+                          byDate[key].push({ plant: plantData, stage: p.stage });
+                        });
+                        
+                        const sorted = Object.entries(byDate).sort((a, b) => {
+                          if (a[0] === 'ready') return -1;
+                          if (b[0] === 'ready') return 1;
+                          if (a[0] === 'unknown') return 1;
+                          if (b[0] === 'unknown') return -1;
+                          return a[0].localeCompare(b[0]);
+                        });
+                        
+                        return sorted.slice(0, 5).map(([time, plants]) => (
+                          <div key={time} className="flex items-center gap-2">
+                            <span className={`font-medium ${time === 'ready' ? 'text-green-600' : 'text-gray-600'}`}>
+                              {time === 'ready' ? '✅ Ready now!' : time}
+                            </span>
+                            <span className="text-gray-400">
+                              {plants.map(p => p.plant.emoji).join(' ')}
+                            </span>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {/* Growing Tips */}
               <GardenTips placedPlants={placedPlants} />
             </aside>
@@ -676,6 +804,19 @@ export default function Home() {
       <DragOverlay>
         {activePlant && <DragOverlayPlant plant={activePlant} />}
       </DragOverlay>
+      
+      {/* Plant Details Modal */}
+      {selectedPlacedPlant && (
+        <PlantDetailsModal
+          plant={selectedPlacedPlant.plant}
+          position={{ x: selectedPlacedPlant.x, y: selectedPlacedPlant.y }}
+          onClose={() => setSelectedPlacedPlant(null)}
+          onRemove={() => {
+            removePlant(selectedPlacedPlant.x, selectedPlacedPlant.y);
+            setSelectedPlacedPlant(null);
+          }}
+        />
+      )}
     </DndContext>
   );
 }
