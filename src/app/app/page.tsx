@@ -436,6 +436,7 @@ export default function Home() {
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'vegetable' | 'herb' | 'fruit'>('all');
   const [selectedPlacedPlant, setSelectedPlacedPlant] = useState<{plant: Plant; x: number; y: number} | null>(null);
   const [darkMode, setDarkMode] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>('garden');
   const [isMobile, setIsMobile] = useState(false);
   const [hoveredCell, setHoveredCell] = useState<{ x: number; y: number } | null>(null);
@@ -664,8 +665,8 @@ export default function Home() {
     >
       <WelcomeModal />
       <Tutorial onComplete={() => {}} />
-      <SideNav activeTab={activeTab} onTabChange={setActiveTab} darkMode={darkMode} />
-      <main className={`min-h-screen p-3 md:p-8 bg-gradient-to-b from-green-50 to-white dark:from-green-900 dark:to-gray-900 transition-colors ${!isMobile ? 'ml-16 md:ml-52' : 'pb-20'}`}>
+      <SideNav activeTab={activeTab} onTabChange={setActiveTab} darkMode={darkMode} isExpanded={sidebarExpanded} onToggle={() => setSidebarExpanded(!sidebarExpanded)} />
+      <main className={`min-h-screen p-3 md:p-8 bg-gradient-to-b from-green-50 to-white dark:from-green-900 dark:to-gray-900 transition-colors ${!isMobile ? (sidebarExpanded ? 'md:ml-52' : 'ml-16') : 'pb-20'}`}>
         <div className="max-w-6xl mx-auto">
           
           {/* Only show header on Garden tab */}

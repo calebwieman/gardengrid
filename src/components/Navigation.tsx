@@ -83,17 +83,16 @@ const navItems: NavItem[] = [
     label: 'Pests',
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="7"/>
-        <path d="M12 5v2"/>
-        <path d="M12 17v2"/>
-        <path d="M5 12H3"/>
-        <path d="M21 12h-2"/>
-        <path d="M7.5 7.5l-1.5 1.5"/>
-        <path d="M17.5 17.5l-1.5 1.5"/>
-        <path d="M7.5 16.5l-1.5-1.5"/>
-        <path d="M17.5 6.5l-1.5-1.5"/>
-        <circle cx="9" cy="9" r="1" fill="currentColor"/>
-        <circle cx="15" cy="9" r="1" fill="currentColor"/>
+        <circle cx="12" cy="5" r="2"/>
+        <path d="M12 7v4"/>
+        <path d="M8 9l4-2 4 2"/>
+        <path d="M8 13l4 2 4-2"/>
+        <path d="M8 11v4"/>
+        <path d="M16 11v4"/>
+        <path d="M10 19v-2"/>
+        <path d="M14 19v-2"/>
+        <path d="M12 17l-2 3"/>
+        <path d="M12 17l2 3"/>
       </svg>
     )
   },
@@ -223,11 +222,15 @@ interface SideNavProps {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
   darkMode?: boolean;
+  isExpanded?: boolean;
+  onToggle?: () => void;
 }
 
-export function SideNav({ activeTab, onTabChange, darkMode = false }: SideNavProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+export function SideNav({ activeTab, onTabChange, darkMode = false, isExpanded: externalExpanded, onToggle }: SideNavProps) {
+  const [internalExpanded, setIsExpanded] = useState(true);
   const [isMobile, setIsMobile] = useState(true);
+  
+  const isExpanded = externalExpanded ?? internalExpanded;
 
   useEffect(() => {
     const checkMobile = () => {
@@ -240,6 +243,14 @@ export function SideNav({ activeTab, onTabChange, darkMode = false }: SideNavPro
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  const handleToggle = () => {
+    if (onToggle) {
+      onToggle();
+    } else {
+      setIsExpanded(!internalExpanded);
+    }
+  };
 
   if (isMobile) return null;
 
@@ -263,7 +274,7 @@ export function SideNav({ activeTab, onTabChange, darkMode = false }: SideNavPro
       {/* Toggle */}
       <div 
         className="p-3 flex items-center gap-3 cursor-pointer transition-colors"
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={handleToggle}
         style={{ 
           borderBottom: `1px solid ${borderColor}`,
           background: hoverBg
