@@ -386,6 +386,7 @@ export default function Home() {
   const [hoveredCell, setHoveredCell] = useState<{ x: number; y: number } | null>(null);
   const [showCostTracker, setShowCostTracker] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
+  const [showPlantSelector, setShowPlantSelector] = useState(true);
   
   // Toggle dark mode on document
   useEffect(() => {
@@ -565,7 +566,7 @@ export default function Home() {
       onDragEnd={handleDragEnd}
     >
       <WelcomeModal />
-      <SideNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <SideNav activeTab={activeTab} onTabChange={setActiveTab} darkMode={darkMode} />
       <main className={`min-h-screen p-3 md:p-8 bg-gradient-to-b from-green-50 to-white dark:from-green-900 dark:to-gray-900 transition-colors ${!isMobile ? 'ml-16 md:ml-52' : 'pb-20'}`}>
         <div className="max-w-6xl mx-auto">
           
@@ -601,9 +602,14 @@ export default function Home() {
           
           {/* Show alternative content based on active tab */}
           {activeTab === 'calendar' && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
-              <h2 className="font-semibold text-gray-700 dark:text-gray-200 mb-4">📅 Planting Calendar</h2>
-              <PlantingCalendar placedPlants={placedPlants} />
+            <div className="space-y-4">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
+                <h2 className="font-semibold text-gray-700 dark:text-gray-200 mb-4">📅 Planting Calendar</h2>
+                <PlantingCalendar placedPlants={placedPlants} />
+              </div>
+              <SuccessionPlanting />
+              <MoonPhaseGardening />
+              <GardenReminders />
             </div>
           )}
           
@@ -611,17 +617,24 @@ export default function Home() {
             <div className="space-y-4">
               <GardenHealthScore />
               <GardenStats placedPlants={placedPlants} />
-              <GardenTips placedPlants={placedPlants} />
               <YieldTracker />
+              <GardenTips placedPlants={placedPlants} />
+              <GardenAnalytics placedPlants={placedPlants} />
             </div>
           )}
           
           {activeTab === 'weather' && (
-            <WeatherWidget zone={zone} />
+            <div className="space-y-4">
+              <WeatherWidget zone={zone} />
+            </div>
           )}
           
           {activeTab === 'journal' && (
-            <GardenJournal />
+            <div className="space-y-4">
+              <GardenJournal />
+              <GardenTasks />
+              <GardenPhotoGallery />
+            </div>
           )}
           
           {activeTab === 'settings' && (
@@ -681,289 +694,10 @@ export default function Home() {
           {activeTab === 'garden' && (
           <>
           
-          {/* Main content - responsive layout */}
+          {/* Mobile: Grid first, then plant selector toggle */}
           <div className="flex flex-col md:flex-row gap-4 md:gap-8">
-            {/* Plant Selector Sidebar - always visible on mobile now */}
-            <aside className="w-full md:w-64 flex-shrink-0 space-y-4">
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-3 md:p-4">
-                <h2 className="font-semibold text-gray-700 dark:text-gray-200 mb-3 flex items-center gap-2">
-                  <span className="text-lg">🪴</span> Plants
-                </h2>
-                
-                {/* Search */}
-                <div className="mb-3">
-                  <input
-                    type="text"
-                    placeholder="Search plants..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:bg-white dark:focus:bg-gray-600 transition-colors"
-                  />
-                </div>
-                
-                {/* Category Filter */}
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {(['all', 'vegetable', 'herb', 'fruit'] as const).map(cat => (
-                    <button
-                      key={cat}
-                      onClick={() => setCategoryFilter(cat)}
-                      className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                        categoryFilter === cat
-                          ? 'bg-green-500 text-white'
-                          : 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-200 hover:bg-gray-200'
-                      }`}
-                    >
-                      {cat === 'all' ? '🌱 All' : cat === 'vegetable' ? '🥬' : cat === 'herb' ? '🌿' : '🍓'}
-                    </button>
-                  ))}
-                </div>
-                
-                <div className="space-y-2 max-h-40 md:max-h-80 overflow-y-auto pr-1">
-                  {filteredPlants.map((plant) => (
-                    <DraggablePlant key={plant.id} plant={plant} />
-                  ))}
-                </div>
-                
-                {selectedPlant && (
-                  <div className="mt-4 p-3 bg-green-50 rounded-lg">
-                    <p className="text-sm text-green-800">
-                      <strong>{selectedPlant.emoji} {selectedPlant.name}</strong>
-                      <br />
-                      Spacing: {selectedPlant.spacing}&quot;
-                      <br />
-                      Sun: {selectedPlant.sunNeeds.replace('-', ' ')}
-                      <br />
-                      Days: {selectedPlant.daysToMaturity}
-                    </p>
-                    <div className="mt-2 text-xs">
-                      <p className="font-medium">Good with:</p>
-                      <p className="text-green-600">
-                        {selectedPlant.companions.map(id => getPlantById(id)?.emoji).join(' ')}
-                      </p>
-                      <p className="font-medium mt-1">Avoid:</p>
-                      <p className="text-red-600">
-                        {selectedPlant.antagonists.map(id => getPlantById(id)?.emoji).join(' ')}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              {/* Smart Plant Suggestions */}
-              <SmartSuggestions 
-                cellX={hoveredCell?.x}
-                cellY={hoveredCell?.y}
-                placedPlants={placedPlants}
-              />
-              
-              {/* Actions */}
-              <div className="flex gap-2">
-                <button
-                  onClick={clearGarden}
-                  className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
-                >
-                  Clear
-                </button>
-                <button
-                  onClick={() => setShowRelationships(!showRelationships)}
-                  className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
-                    showRelationships 
-                      ? 'bg-green-500 hover:bg-green-600 text-white' 
-                      : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                  }`}
-                >
-                  {showRelationships ? 'Lines On' : 'Lines Off'}
-                </button>
-              </div>
-              
-              {/* Undo/Redo */}
-              <div className="flex gap-2">
-                <button
-                  onClick={undo}
-                  disabled={!canUndo()}
-                  className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  title="Undo (Ctrl+Z)"
-                >
-                  ↩️ Undo
-                </button>
-                <button
-                  onClick={redo}
-                  disabled={!canRedo()}
-                  className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  title="Redo (Ctrl+Y)"
-                >
-                  ↪️ Redo
-                </button>
-              </div>
-              
-              {/* Export/Import */}
-              <div className="flex gap-2">
-                <button
-                  onClick={handleExport}
-                  className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
-                >
-                  📥 Export
-                </button>
-                <label className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-center cursor-pointer">
-                  📤 Import
-                  <input 
-                    type="file" 
-                    accept=".json" 
-                    onChange={handleImport} 
-                    className="hidden" 
-                  />
-                </label>
-              </div>
-              
-              {/* Export as Image */}
-              <button
-                onClick={handleExportImage}
-                disabled={isExporting || placedPlants.length === 0}
-                className="w-full px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isExporting ? (
-                  <>⏳ Exporting...</>
-                ) : (
-                  <>🖼️ Save as Image</>
-                )}
-              </button>
-              {placedPlants.length === 0 && (
-                <p className="text-xs text-gray-400 text-center">Add plants to your garden to export as image</p>
-              )}
-              
-              {/* Garden Share */}
-              <GardenShare />
-              
-              {/* Garden Templates */}
-              <GardenTemplates />
-              
-              {/* Garden Themes - Pre-designed garden layouts */}
-              <GardenThemes />
-              
-              {/* Garden Manager - Multiple gardens support */}
-              <GardenManager />
-              
-              {/* Weather Widget */}
-              <WeatherWidget zone={zone} />
-              
-              {/* Moon Phase Gardening */}
-              <MoonPhaseGardening />
-              
-              {/* Garden Care - Soil, Watering, Pests */}
-              <GardenCare />
-              
-              {/* Pest Tracker */}
-              <PestTracker />
-              
-              {/* Crop Rotation Planner */}
-              <CropRotationPlanner />
-              
-              {/* Seed Shopping List */}
-              <SeedList />
-              
-              {/* Garden Supply Calculator - Estimate costs */}
-              <GardenSupplyCalculator />
-              
-              {/* Monthly Garden Tasks */}
-              <GardenTasks />
-              
-              {/* Garden Analytics Dashboard */}
-              <GardenAnalytics placedPlants={placedPlants} />
-              
-              {/* Planting Calendar */}
-              <PlantingCalendar placedPlants={placedPlants} />
-              
-              {/* Succession Planting Scheduler */}
-              <SuccessionPlanting />
-              
-              {/* Yield Tracker - Track expected vs actual yields */}
-              <YieldTracker />
-              
-              {/* Recipe Suggestions - Based on what's planted */}
-              <RecipeSuggestions placedPlants={placedPlants} />
-              
-              {/* Garden Photo Gallery - Upload and track garden photos */}
-              <GardenPhotoGallery />
-              
-              {/* Garden Reminders - Task notifications and scheduling */}
-              <GardenReminders />
-              
-              {/* Garden Achievements - Gamification and progress tracking */}
-              <GardenAchievements />
-              
-              {/* Garden Stats */}
-              <GardenStats placedPlants={placedPlants} />
-              
-              {/* Plant Stage Legend */}
-              {placedPlants.length > 0 && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
-                  <h3 className="font-semibold text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
-                    <span>📅</span> Growth Stages
-                  </h3>
-                  <p className="text-xs text-gray-500 mb-3">Click a plant to advance its stage</p>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs">🌱 Seedling</span>
-                      <span className="text-gray-500">Just planted</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">🌿 Growing</span>
-                      <span className="text-gray-500">Mid-growth</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">✨ Ready</span>
-                      <span className="text-gray-500">Time to harvest!</span>
-                    </div>
-                  </div>
-                  
-                  {/* Harvest predictions */}
-                  <div className="mt-4 pt-3 border-t border-gray-100">
-                    <h4 className="font-medium text-gray-700 mb-2">📆 Harvest Timeline</h4>
-                    <div className="space-y-1 text-xs">
-                      {(() => {
-                        // Group plants by harvest date
-                        const byDate: Record<string, { plant: Plant; stage: PlantStage | undefined }[]> = {};
-                        placedPlants.forEach(p => {
-                          const plantData = getPlantById(p.plantId);
-                          if (!plantData) return;
-                          const days = daysUntilHarvest(p.plantedAt, plantData.daysToMaturity);
-                          const key = days === null ? 'unknown' : days <= 0 ? 'ready' : `in ${days} days`;
-                          if (!byDate[key]) byDate[key] = [];
-                          byDate[key].push({ plant: plantData, stage: p.stage });
-                        });
-                        
-                        const sorted = Object.entries(byDate).sort((a, b) => {
-                          if (a[0] === 'ready') return -1;
-                          if (b[0] === 'ready') return 1;
-                          if (a[0] === 'unknown') return 1;
-                          if (b[0] === 'unknown') return -1;
-                          return a[0].localeCompare(b[0]);
-                        });
-                        
-                        return sorted.slice(0, 5).map(([time, plants]) => (
-                          <div key={time} className="flex items-center gap-2">
-                            <span className={`font-medium ${time === 'ready' ? 'text-green-600' : 'text-gray-600'}`}>
-                              {time === 'ready' ? '✅ Ready now!' : time}
-                            </span>
-                            <span className="text-gray-400">
-                              {plants.map(p => p.plant.emoji).join(' ')}
-                            </span>
-                          </div>
-                        ));
-                      })()}
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Growing Tips */}
-              <GardenTips placedPlants={placedPlants} />
-              
-              {/* Garden Journal */}
-              <GardenJournal />
-            </aside>
             
-            {/* Garden Grid */}
+            {/* Garden Grid - FIRST on mobile */}
             <div className="flex-1 order-1 md:order-2">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-3 md:p-4">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
@@ -989,20 +723,18 @@ export default function Home() {
                 
                 {/* Compatibility Score */}
                 {placedPlants.length > 0 && (
-                  <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div className="flex items-center justify-between gap-2">
                       <div>
-                        <span className="text-sm text-gray-600">Garden Harmony: </span>
-                        <span className={`text-2xl font-bold ${getScoreColor(score)}`}>{score}%</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-300">Harmony: </span>
+                        <span className={`text-xl font-bold ${getScoreColor(score)}`}>{score}%</span>
                       </div>
-                      <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm">
-                        <span className="text-green-600">✓ {companionCount} companions</span>
-                        <span className="text-red-600">✗ {antagonistCount} conflicts</span>
-                        {spacingWarnings > 0 && <span className="text-orange-500">⚠ {spacingWarnings} spacing</span>}
+                      <div className="flex gap-2 text-xs">
+                        <span className="text-green-600">✓{companionCount}</span>
+                        <span className="text-red-600">✗{antagonistCount}</span>
                       </div>
                     </div>
-                    {/* Score bar */}
-                    <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="mt-2 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                       <div 
                         className={`h-full transition-all ${score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
                         style={{ width: `${score}%` }}
@@ -1011,7 +743,7 @@ export default function Home() {
                   </div>
                 )}
                 
-                {/* Grid with relationship lines */}
+                {/* Grid */}
                 <div className="relative overflow-x-auto -mx-2 px-2 md:mx-0 md:px-0">
                   <div 
                     ref={gardenGridRef}
@@ -1028,10 +760,111 @@ export default function Home() {
                   <RelationshipLines relationships={relationships} cellSize={isMobile ? (gridSize === 4 ? 40 : gridSize === 8 ? 35 : 30) : gridSize === 4 ? 120 : gridSize === 8 ? 65 : 45} />
                 </div>
                 
-                <p className="mt-2 md:mt-4 text-xs md:text-sm text-gray-500 dark:text-gray-400 text-center">
-                  Each cell = 1 sq ft • Green lines = companions • Red dashed = avoid
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+                  Tap cell to plant • Tap again to change stage
                 </p>
               </div>
+              
+              {/* Quick Actions - below grid on mobile */}
+              <div className="mt-4 flex flex-wrap gap-2 md:hidden">
+                <button
+                  onClick={() => setShowPlantSelector(!showPlantSelector)}
+                  className="flex-1 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium"
+                >
+                  {showPlantSelector ? '🙈 Hide Plants' : '🪴 Show Plants'}
+                </button>
+                <button
+                  onClick={undo}
+                  disabled={!canUndo()}
+                  className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm disabled:opacity-40"
+                >
+                  ↩️
+                </button>
+                <button
+                  onClick={redo}
+                  disabled={!canRedo()}
+                  className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm disabled:opacity-40"
+                >
+                  ↪️
+                </button>
+                <button
+                  onClick={clearGarden}
+                  className="px-3 py-2 bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 rounded-lg text-sm"
+                >
+                  🗑️
+                </button>
+              </div>
+              
+              {/* Plant Selector - collapsible on mobile */}
+              <aside className={`mt-4 md:mt-0 md:w-64 md:flex-shrink-0 space-y-4 order-2 md:order-1 ${isMobile && !showPlantSelector ? 'hidden' : ''}`}>
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-3 md:p-4">
+                  <h2 className="font-semibold text-gray-700 dark:text-gray-200 mb-3 flex items-center gap-2">
+                    <span className="text-lg">🪴</span> Plants
+                  </h2>
+                  
+                  {/* Search */}
+                  <div className="mb-3">
+                    <input
+                      type="text"
+                      placeholder="Search..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg focus:outline-none focus:border-green-500"
+                    />
+                  </div>
+                  
+                  {/* Category Filter */}
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {(['all', 'vegetable', 'herb', 'fruit'] as const).map(cat => (
+                      <button
+                        key={cat}
+                        onClick={() => setCategoryFilter(cat)}
+                        className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                          categoryFilter === cat
+                            ? 'bg-green-500 text-white'
+                            : 'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-200'
+                        }`}
+                      >
+                        {cat === 'all' ? '🌱' : cat === 'vegetable' ? '🥬' : cat === 'herb' ? '🌿' : '🍓'}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Plant List - compact on mobile */}
+                  <div className="space-y-1 max-h-32 md:max-h-80 overflow-y-auto pr-1">
+                    {filteredPlants.slice(0, isMobile ? 10 : 50).map((plant) => (
+                      <button
+                        key={plant.id}
+                        onClick={() => setSelectedPlant(plant.id === selectedPlantId ? null : plant.id)}
+                        className={`flex items-center gap-2 w-full p-2 rounded-lg text-left transition-all ${
+                          selectedPlantId === plant.id 
+                            ? 'bg-green-100 dark:bg-green-900 border-2 border-green-500' 
+                            : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        <span className="text-xl">{plant.emoji}</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{plant.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {filteredPlants.length > (isMobile ? 10 : 50) && (
+                    <p className="text-xs text-gray-400 mt-2 text-center">+{filteredPlants.length - (isMobile ? 10 : 50)} more</p>
+                  )}
+                </div>
+                
+                {/* Quick actions for desktop */}
+                <div className="hidden md:flex gap-2">
+                  <button onClick={undo} disabled={!canUndo()} className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg disabled:opacity-40">↩️ Undo</button>
+                  <button onClick={redo} disabled={!canRedo()} className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg disabled:opacity-40">↪️ Redo</button>
+                  <button onClick={clearGarden} className="px-4 py-2 bg-red-100 dark:bg-red-900 text-red-600 rounded-lg">Clear</button>
+                </div>
+                
+                {/* Templates & Themes - quick start options */}
+                <div className="grid grid-cols-2 gap-2">
+                  <GardenThemes />
+                </div>
+              </aside>
             </div>
           </div>
         </>

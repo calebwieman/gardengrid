@@ -167,9 +167,10 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
 interface SideNavProps {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
+  darkMode?: boolean;
 }
 
-export function SideNav({ activeTab, onTabChange }: SideNavProps) {
+export function SideNav({ activeTab, onTabChange, darkMode = false }: SideNavProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isMobile, setIsMobile] = useState(true);
 
@@ -187,20 +188,31 @@ export function SideNav({ activeTab, onTabChange }: SideNavProps) {
 
   if (isMobile) return null;
 
+  const bgGradient = darkMode 
+    ? 'linear-gradient(180deg, #1f2937 0%, #111827 100%)'
+    : 'linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%)';
+  const borderColor = darkMode ? '#374151' : '#bbf7d0';
+  const hoverBg = darkMode ? 'rgba(55, 65, 81, 0.5)' : 'rgba(34, 197, 94, 0.1)';
+  const textColor = darkMode ? '#9ca3af' : '#6b7280';
+  const activeColor = '#16a34a';
+
   return (
     <nav 
       className="fixed left-0 top-0 h-screen z-40 flex flex-col transition-all duration-300"
       style={{ 
-        background: 'linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%)',
-        borderRight: '1px solid #bbf7d0',
+        background: bgGradient,
+        borderRight: `1px solid ${borderColor}`,
         width: isExpanded ? '200px' : '64px'
       }}
     >
       {/* Toggle */}
       <div 
-        className="p-3 flex items-center gap-3 cursor-pointer hover:bg-green-100 transition-colors"
+        className="p-3 flex items-center gap-3 cursor-pointer transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
-        style={{ borderBottom: '1px solid #bbf7d0' }}
+        style={{ 
+          borderBottom: `1px solid ${borderColor}`,
+          background: hoverBg
+        }}
       >
         <div style={{ color: '#16a34a' }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -210,7 +222,7 @@ export function SideNav({ activeTab, onTabChange }: SideNavProps) {
           </svg>
         </div>
         {isExpanded && (
-          <span className="font-bold text-green-800">GardenGrid</span>
+          <span className={`font-bold ${darkMode ? 'text-green-400' : 'text-green-800'}`}>GardenGrid</span>
         )}
       </div>
 
@@ -226,8 +238,8 @@ export function SideNav({ activeTab, onTabChange }: SideNavProps) {
               className="w-full flex items-center gap-3 px-4 py-3 transition-all duration-200"
               style={{
                 background: isActive ? 'rgba(34, 197, 94, 0.15)' : 'transparent',
-                color: isActive ? '#16a34a' : '#6b7280',
-                borderLeft: isActive ? '3px solid #16a34a' : '3px solid transparent',
+                color: isActive ? activeColor : textColor,
+                borderLeft: isActive ? `3px solid ${activeColor}` : '3px solid transparent',
               }}
             >
               <div className="flex-shrink-0">{item.icon}</div>
