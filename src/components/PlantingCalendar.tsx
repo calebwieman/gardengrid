@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useGardenStore, PlacedPlant } from '@/stores/gardenStore';
 import { plants, getPlantById, zones, getZoneData, Plant } from '@/lib/plants';
 
@@ -12,7 +12,7 @@ interface CalendarEvent {
 }
 
 function PlantingCalendar({ placedPlants }: { placedPlants: PlacedPlant[] }) {
-  const [zone, setZone] = useState(6);
+  const { zone, setZone } = useGardenStore();
   const zoneData = getZoneData(zone);
   
   // Parse last frost date

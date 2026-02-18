@@ -13,6 +13,8 @@ import GardenTemplates from '@/components/GardenTemplates';
 import WelcomeModal from '@/components/WelcomeModal';
 import PlantDetailsModal from '@/components/PlantDetailsModal';
 import GardenJournal from '@/components/GardenJournal';
+import GardenManager from '@/components/GardenManager';
+import WeatherWidget from '@/components/WeatherWidget';
 
 function DraggablePlant({ plant }: { plant: Plant }) {
   const { selectedPlantId, setSelectedPlant } = useGardenStore();
@@ -344,6 +346,8 @@ export default function Home() {
     canRedo,
     exportGarden,
     importGarden,
+    importFromShare,
+    zone,
   } = useGardenStore();
   const [activePlant, setActivePlant] = useState<Plant | null>(null);
   const [showRelationships, setShowRelationships] = useState(true);
@@ -485,6 +489,17 @@ export default function Home() {
       setShowMobileMenu(false);
     }
   }, [selectedPlantId, isMobile]);
+  
+  // Check for shared garden URL on load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('garden')) {
+      const success = importFromShare();
+      if (success) {
+        alert('Garden loaded from shared link!');
+      }
+    }
+  }, []);
   
   // Get score color
   const getScoreColor = (s: number) => {
@@ -698,6 +713,12 @@ export default function Home() {
               
               {/* Garden Templates */}
               <GardenTemplates />
+              
+              {/* Garden Manager - Multiple gardens support */}
+              <GardenManager />
+              
+              {/* Weather Widget */}
+              <WeatherWidget zone={zone} />
               
               {/* Planting Calendar */}
               <PlantingCalendar placedPlants={placedPlants} />

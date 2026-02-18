@@ -47,6 +47,7 @@ src/
 - [x] Iteration 12: Plant lifecycle tracking (seedling → growing → ready) + harvest date predictions + 60+ plants
 - [x] Iteration 13: Garden journal - add notes, observations, harvests, problems
 - [x] Iteration 14: Export garden as image (PNG download)
+- [x] Iteration 15: Weather widget + frost date alerts + planting advice
 
 ## Features (Coming Soon)
 
@@ -54,5 +55,4 @@ src/
 - 500+ plant database with companion planting info
 - Garden-wide compatibility scoring
 - Planting calendar based on frost dates
-- Weather integration and notifications
 - Garden journal
