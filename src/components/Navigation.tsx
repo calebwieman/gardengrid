@@ -240,10 +240,12 @@ export function SideNav({ activeTab, onTabChange, darkMode = false }: SideNavPro
         }}
       >
         <div style={{ color: '#16a34a' }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 22V8" />
-            <path d="M5 12H2a10 10 0 0 0 20 0h-3" />
-            <path d="M5 12a5 5 0 0 0 0 10h14a5 5 0 0 0 0-10" />
+          <svg width="24" height="24" viewBox="0 0 40 40" fill="none">
+            <rect x="2" y="2" width="16" height="16" rx="3" fill="#22c55e" fillOpacity="0.2" stroke="#22c55e" strokeWidth="2"/>
+            <rect x="22" y="2" width="16" height="16" rx="3" fill="#22c55e" fillOpacity="0.2" stroke="#22c55e" strokeWidth="2"/>
+            <rect x="2" y="22" width="16" height="16" rx="3" fill="#22c55e" fillOpacity="0.2" stroke="#22c55e" strokeWidth="2"/>
+            <rect x="22" y="22" width="16" height="16" rx="3" fill="#16a34a" stroke="#16a34a" strokeWidth="2"/>
+            <path d="M30 30L34 34M30 34L34 30" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round"/>
           </svg>
         </div>
         {isExpanded && (

@@ -46,7 +46,13 @@ export default function WelcomeModal() {
           {/* Header with icon */}
           <div className="text-center mb-4">
             <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-full mb-3">
-              <span className="text-2xl sm:text-4xl">🌱</span>
+              <svg className="w-8 h-8 sm:w-10 sm:h-10" viewBox="0 0 40 40" fill="none">
+                <rect x="2" y="2" width="16" height="16" rx="3" fill="#22c55e" fillOpacity="0.2" stroke="#22c55e" strokeWidth="2"/>
+                <rect x="22" y="2" width="16" height="16" rx="3" fill="#22c55e" fillOpacity="0.2" stroke="#22c55e" strokeWidth="2"/>
+                <rect x="2" y="22" width="16" height="16" rx="3" fill="#22c55e" fillOpacity="0.2" stroke="#22c55e" strokeWidth="2"/>
+                <rect x="22" y="22" width="16" height="16" rx="3" fill="#16a34a" stroke="#16a34a" strokeWidth="2"/>
+                <path d="M30 30L34 34M30 34L34 30" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round"/>
+              </svg>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Welcome to GardenGrid!</h2>
             <p className="text-gray-600 mt-1 text-sm">Your intelligent garden planning companion</p>
