@@ -87,6 +87,12 @@ function AdminWaitlistContent() {
             >
               Clear
             </button>
+            <button
+              onClick={() => router.push('/admin')}
+              className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium"
+            >
+              Logout
+            </button>
           </div>
         </div>
 
