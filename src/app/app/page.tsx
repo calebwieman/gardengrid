@@ -228,10 +228,28 @@ function RelationshipLines({
       viewBox={`0 0 ${size} ${size}`}
     >
       {relationships.map((r, i) => {
-        const x1 = r.fromX * cellSize + cellSize / 2;
-        const y1 = r.fromY * cellSize + cellSize / 2;
-        const x2 = r.toX * cellSize + cellSize / 2;
-        const y2 = r.toY * cellSize + cellSize / 2;
+        // Calculate line coordinates on grid edges (between adjacent cells)
+        let x1, y1, x2, y2;
+        
+        if (r.toX > r.fromX) {
+          // Horizontal: from right edge of fromCell to left edge of toCell
+          x1 = (r.fromX + 1) * cellSize;
+          x2 = r.toX * cellSize;
+          y1 = r.fromY * cellSize + cellSize / 2;
+          y2 = r.toY * cellSize + cellSize / 2;
+        } else if (r.toY > r.fromY) {
+          // Vertical: from bottom edge of fromCell to top edge of toCell
+          x1 = r.fromX * cellSize + cellSize / 2;
+          x2 = r.toX * cellSize + cellSize / 2;
+          y1 = (r.fromY + 1) * cellSize;
+          y2 = r.toY * cellSize;
+        } else {
+          // Fallback to center
+          x1 = r.fromX * cellSize + cellSize / 2;
+          y1 = r.fromY * cellSize + cellSize / 2;
+          x2 = r.toX * cellSize + cellSize / 2;
+          y2 = r.toY * cellSize + cellSize / 2;
+        }
         
         return (
           <line
@@ -241,9 +259,9 @@ function RelationshipLines({
             x2={x2}
             y2={y2}
             stroke={r.type === 'companion' ? '#22c55e' : r.type === 'antagonist' ? '#ef4444' : '#f97316'}
-            strokeWidth="3"
+            strokeWidth="4"
             strokeDasharray={r.type === 'antagonist' ? '8,4' : r.type === 'spacing' ? '4,4' : undefined}
-            opacity="0.7"
+            opacity="0.8"
           />
         );
       })}
