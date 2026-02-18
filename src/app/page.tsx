@@ -11,6 +11,7 @@ import GardenTips from '@/components/GardenTips';
 import GardenTemplates from '@/components/GardenTemplates';
 import WelcomeModal from '@/components/WelcomeModal';
 import PlantDetailsModal from '@/components/PlantDetailsModal';
+import GardenJournal from '@/components/GardenJournal';
 
 function DraggablePlant({ plant }: { plant: Plant }) {
   const { selectedPlantId, setSelectedPlant } = useGardenStore();
@@ -118,8 +119,8 @@ function DroppableCell({ x, y, showRelationships, relationships, onViewDetails }
         ${plantData 
           ? '' 
           : selectedPlantId 
-            ? 'bg-green-50 hover:bg-green-100 border border-green-200' 
-            : 'bg-gray-100 hover:bg-gray-200 border border-gray-200'
+            ? 'bg-green-50 hover:bg-green-100 dark:bg-green-900 dark:hover:bg-green-800 border border-green-200 dark:border-green-700' 
+            : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'
         }
       `}
       style={{ 
@@ -156,25 +157,7 @@ function DroppableCell({ x, y, showRelationships, relationships, onViewDetails }
         </button>
       )}
       
-      {/* Relationship indicators */}
-      {showRelationships && cellRelationships.length > 0 && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          {cellRelationships.map((r, i) => (
-            <div
-              key={i}
-              className={`absolute w-3 h-3 rounded-full border-2 border-white ${
-                r.type === 'companion' ? 'bg-green-500' : r.type === 'antagonist' ? 'bg-red-500' : 'bg-orange-400'
-              }`}
-              style={{
-                top: r.fromX === x && r.fromY === y ? '5%' : 
-                     r.toX === x && r.toY === y ? '85%' : '50%',
-                left: r.fromX === x && r.fromY === y ? '85%' : 
-                      r.toX === x && r.toY === y ? '5%' : '50%',
-              }}
-            />
-          ))}
-        </div>
-      )}
+      {/* Note: Relationship lines are now rendered via the SVG RelationshipLines component below */}
     </div>
   );
 }
@@ -366,6 +349,16 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'vegetable' | 'herb' | 'fruit'>('all');
   const [selectedPlacedPlant, setSelectedPlacedPlant] = useState<{plant: Plant; x: number; y: number} | null>(null);
+  const [darkMode, setDarkMode] = useState(false);
+  
+  // Toggle dark mode on document
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
   
   const { relationships, score, companionCount, antagonistCount, spacingWarnings } = useGardenRelationships(placedPlants);
   
@@ -499,17 +492,17 @@ export default function Home() {
       onDragEnd={handleDragEnd}
     >
       <WelcomeModal />
-      <main className="min-h-screen p-4 md:p-8 bg-gradient-to-b from-green-50 to-white">
+      <main className="min-h-screen p-4 md:p-8 bg-gradient-to-b from-green-50 to-white dark:from-green-900 dark:to-gray-900 transition-colors">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <header className="mb-6 md:mb-8">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-2xl md:text-3xl font-bold text-green-800">🌱 GardenGrid</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-green-800 dark:text-green-400">🌱 GardenGrid</h1>
               <input
                 type="text"
                 value={gardenName}
                 onChange={(e) => setGardenName(e.target.value)}
-                className="text-lg md:text-xl font-semibold text-gray-700 bg-transparent border-b-2 border-gray-300 focus:border-green-500 focus:outline-none px-2 py-1 flex-1 max-w-xs"
+                className="text-lg md:text-xl font-semibold text-gray-700 dark:text-gray-200 bg-transparent border-b-2 border-gray-300 dark:border-gray-600 focus:border-green-500 focus:outline-none px-2 py-1 flex-1 max-w-xs"
                 placeholder="Garden name..."
               />
               {/* Mobile menu toggle */}
@@ -521,8 +514,16 @@ export default function Home() {
                   {showMobileMenu ? '✕' : '☰'}
                 </button>
               )}
+              {/* Dark mode toggle */}
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {darkMode ? '☀️' : '🌙'}
+              </button>
             </div>
-            <p className="text-gray-600 text-sm md:text-base">
+            <p className="text-gray-600 dark:text-gray-300 text-sm md:text-base">
               Drag plants onto the grid. Green lines = good companions, Red dashed = bad neighbors!
             </p>
           </header>
@@ -531,8 +532,8 @@ export default function Home() {
           <div className={`flex flex-col md:flex-row gap-4 md:gap-8 ${isMobile && !showMobileMenu ? 'hidden' : ''}`}>
             {/* Plant Selector Sidebar */}
             <aside className={`w-full md:w-64 flex-shrink-0 space-y-4 ${isMobile ? 'order-2' : ''}`}>
-              <div className="bg-white rounded-xl shadow-md p-4">
-                <h2 className="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
+                <h2 className="font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
                   <span className="text-xl">🪴</span> Plants
                 </h2>
                 
@@ -543,7 +544,7 @@ export default function Home() {
                     placeholder="Search plants..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-gray-100 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:bg-white transition-colors"
+                    className="w-full px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:bg-white dark:focus:bg-gray-600 transition-colors"
                   />
                 </div>
                 
@@ -599,7 +600,7 @@ export default function Home() {
               <div className="flex gap-2">
                 <button
                   onClick={clearGarden}
-                  className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+                  className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
                 >
                   Clear
                 </button>
@@ -665,8 +666,8 @@ export default function Home() {
               
               {/* Plant Stage Legend */}
               {placedPlants.length > 0 && (
-                <div className="bg-white rounded-xl shadow-md p-4">
-                  <h3 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
+                  <h3 className="font-semibold text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
                     <span>📅</span> Growth Stages
                   </h3>
                   <p className="text-xs text-gray-500 mb-3">Click a plant to advance its stage</p>
@@ -727,20 +728,23 @@ export default function Home() {
               
               {/* Growing Tips */}
               <GardenTips placedPlants={placedPlants} />
+              
+              {/* Garden Journal */}
+              <GardenJournal />
             </aside>
             
             {/* Garden Grid */}
             <div className="flex-1 order-1 md:order-2">
-              <div className="bg-white rounded-xl shadow-md p-3 md:p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-3 md:p-4">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                   <div className="flex items-center gap-3">
-                    <h2 className="font-semibold text-gray-700 flex items-center gap-2">
+                    <h2 className="font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
                       <span className="text-xl">🌿</span> My Garden
                     </h2>
                     <select
                       value={gridSize}
                       onChange={(e) => setGridSize(Number(e.target.value))}
-                      className="text-sm bg-gray-100 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:border-green-500"
+                      className="text-sm bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded px-2 py-1 focus:outline-none focus:border-green-500"
                     >
                       <option value={4}>4×4</option>
                       <option value={8}>8×8</option>
@@ -780,7 +784,7 @@ export default function Home() {
                 {/* Grid with relationship lines */}
                 <div className="relative overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0">
                   <div 
-                    className="grid gap-1 bg-gray-200 p-1 rounded mx-auto"
+                    className="grid gap-1 bg-gray-200 dark:bg-gray-600 p-1 rounded mx-auto"
                     style={{ 
                       gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
                       maxWidth: '100%',
@@ -789,7 +793,7 @@ export default function Home() {
                   >
                     {gridCells}
                   </div>
-                  <RelationshipLines relationships={relationships} cellSize={isMobile ? (gridSize === 4 ? 60 : gridSize === 8 ? 35 : 28) : gridSize === 4 ? 100 : gridSize === 8 ? 50 : 35} />
+                  <RelationshipLines relationships={relationships} cellSize={isMobile ? (gridSize === 4 ? 70 : gridSize === 8 ? 45 : 38) : gridSize === 4 ? 120 : gridSize === 8 ? 65 : 45} />
                 </div>
                 
                 <p className="mt-4 text-sm text-gray-500 text-center">

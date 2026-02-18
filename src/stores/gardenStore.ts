@@ -13,6 +13,13 @@ export interface PlacedPlant {
   stage?: PlantStage; // Current growth stage
 }
 
+export interface JournalEntry {
+  id: string;
+  text: string;
+  createdAt: string;
+  type: 'observation' | 'tip' | 'harvest' | 'problem';
+}
+
 interface GardenState {
   gardenName: string;
   gridSize: number;
@@ -22,6 +29,7 @@ interface GardenState {
   selectedPlantId: string | null;
   hasVisited: boolean;
   mobileMenuOpen: boolean;
+  journalEntries: JournalEntry[];
   // Undo/Redo
   history: PlacedPlant[][];
   historyIndex: number;
@@ -31,9 +39,13 @@ interface GardenState {
   setPlacedPlants: (plants: PlacedPlant[]) => void;
   setHasVisited: (visited: boolean) => void;
   setMobileMenuOpen: (open: boolean) => void;
+  // Journal
+  addJournalEntry: (text: string, type: JournalEntry['type']) => void;
+  removeJournalEntry: (id: string) => void;
   placePlant: (x: number, y: number) => void;
   removePlant: (x: number, y: number) => void;
   clearGarden: () => void;
+  updatePlantStage: (x: number, y: number, stage: PlantStage) => void;
   // Undo/Redo
   undo: () => void;
   redo: () => void;
@@ -55,12 +67,28 @@ export const useGardenStore = create<GardenState>()(
       selectedPlantId: null,
       hasVisited: false,
       mobileMenuOpen: false,
+      journalEntries: [],
       history: [],
       historyIndex: -1,
       
       setGardenName: (name) => set({ gardenName: name }),
       setHasVisited: (visited: boolean) => set({ hasVisited: visited }),
       setMobileMenuOpen: (open: boolean) => set({ mobileMenuOpen: open }),
+      
+      // Journal
+      addJournalEntry: (text, type) => {
+        const newEntry: JournalEntry = {
+          id: `journal-${Date.now()}`,
+          text,
+          type,
+          createdAt: new Date().toISOString(),
+        };
+        set((state) => ({ journalEntries: [newEntry, ...state.journalEntries] }));
+      },
+      
+      removeJournalEntry: (id) => {
+        set((state) => ({ journalEntries: state.journalEntries.filter(e => e.id !== id) }));
+      },
       
       setGridSize: (size) => set({ 
         gridSize: size, 
@@ -112,8 +140,7 @@ export const useGardenStore = create<GardenState>()(
           };
           get().setPlacedPlants(newPlants);
         } else {
-          const newPlants = [
-            ...placedPlants,
+          const newPlants: PlacedPlant[] = [
             { id: `${selectedPlantId}-${x}-${y}`, plantId: selectedPlantId, x, y, plantedAt: now, stage: 'seedling' },
           ];
           get().setPlacedPlants(newPlants);
@@ -207,6 +234,7 @@ export const useGardenStore = create<GardenState>()(
         gridSize: state.gridSize,
         placedPlants: state.placedPlants,
         hasVisited: state.hasVisited,
+        journalEntries: state.journalEntries,
       }),
     }
   )
