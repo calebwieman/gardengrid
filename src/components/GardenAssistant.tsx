@@ -30,9 +30,12 @@ export default function GardenAssistant() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { placedPlants, gardens, currentGardenId } = useGardenStore();
+  const { placedPlants, gardens, activeGardenId, zone } = useGardenStore();
   
-  const currentGarden = gardens.find(g => g.id === currentGardenId);
+  const currentGarden = gardens.find(g => g.id === activeGardenId);
+  
+  // Get zone - either from store or default
+  const gardenZone = zone;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -54,7 +57,7 @@ export default function GardenAssistant() {
     const gardenContext = currentGarden ? `
 Current Garden: ${currentGarden.name}
 Grid Size: ${currentGarden.gridSize}x${currentGarden.gridSize}
-USDA Zone: ${currentGarden.usdaZone || 'Not set'}
+USDA Zone: ${zone || 'Not set'}
 Plants in garden: ${gardenPlants.length > 0 ? gardenPlants.map(p => p!.plant.name).join(', ') : 'None yet'}
 ` : 'No garden created yet.';
 
