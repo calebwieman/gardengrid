@@ -18,6 +18,7 @@ import GardenManager from '@/components/GardenManager';
 import WeatherWidget from '@/components/WeatherWidget';
 import GardenCare from '@/components/GardenCare';
 import SeedList from '@/components/SeedList';
+import Tutorial from '@/components/Tutorial';
 import PestTracker from '@/components/PestTracker';
 import CropRotationPlanner from '@/components/CropRotationPlanner';
 import GardenShare from '@/components/GardenShare';
@@ -662,6 +663,7 @@ export default function Home() {
       onDragEnd={handleDragEnd}
     >
       <WelcomeModal />
+      <Tutorial onComplete={() => {}} />
       <SideNav activeTab={activeTab} onTabChange={setActiveTab} darkMode={darkMode} />
       <main className={`min-h-screen p-3 md:p-8 bg-gradient-to-b from-green-50 to-white dark:from-green-900 dark:to-gray-900 transition-colors ${!isMobile ? 'ml-16 md:ml-52' : 'pb-20'}`}>
         <div className="max-w-6xl mx-auto">
@@ -700,6 +702,7 @@ export default function Home() {
           {/* Dark mode toggle - fixed position on desktop */}
           {!isMobile && (
             <button
+              id="dark-mode"
               onClick={() => setDarkMode(!darkMode)}
               className="fixed top-4 right-4 z-40 p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
               title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -830,7 +833,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row gap-4 md:gap-8">
             
             {/* Plant Selector Sidebar - BEFORE grid on desktop, AFTER on mobile */}
-            <aside className={`w-full md:w-64 md:flex-shrink-0 space-y-3 ${isMobile ? 'order-2' : 'order-1'}`}>
+            <aside id="plant-picker" className={`w-full md:w-64 md:flex-shrink-0 space-y-3 ${isMobile ? 'order-2' : 'order-1'}`}>
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-3">
                 <h2 className="font-semibold text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
                   <span>🪴</span> Plants
@@ -888,7 +891,7 @@ export default function Home() {
               </div>
               
               {/* Quick Actions */}
-              <div className="flex gap-2">
+              <div id="save-export" className="flex gap-2">
                 <button onClick={undo} disabled={!canUndo()} className="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg text-sm disabled:opacity-40">↩️ Undo</button>
                 <button onClick={redo} disabled={!canRedo()} className="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg text-sm disabled:opacity-40">↪️ Redo</button>
                 <button onClick={clearGarden} className="px-3 py-2 bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 rounded-lg text-sm">🗑️</button>
@@ -937,7 +940,7 @@ export default function Home() {
                 )}
                 
                 {/* Grid */}
-                <div className="relative overflow-x-auto -mx-2 px-2 md:mx-0 md:px-0">
+                <div id="garden-grid" className="relative overflow-x-auto -mx-2 px-2 md:mx-0 md:px-0">
                   <div 
                     ref={gardenGridRef}
                     className="grid gap-0.5 md:gap-1 bg-gray-200 dark:bg-gray-600 p-0.5 md:p-1 rounded mx-auto"
@@ -1022,7 +1025,9 @@ export default function Home() {
         </div>
       </main>
       
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <div id="nav-tabs">
+        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      </div>
       
       <DragOverlay>
         {activePlant && <DragOverlayPlant plant={activePlant} />}
