@@ -5,6 +5,7 @@ import html2canvas from 'html2canvas';
 import { DndContext, DragEndEvent, DragOverlay, useSensor, useSensors, PointerSensor, useDraggable, useDroppable, TouchSensor } from '@dnd-kit/core';
 import { useGardenStore, PlacedPlant, PlantStage } from '@/stores/gardenStore';
 import { plants, getPlantById, Plant } from '@/lib/plants';
+import { BottomNav, SideNav, navItems, TabId } from '@/components/Navigation';
 import PlantingCalendar from '@/components/PlantingCalendar';
 import SaveIndicator from '@/components/SaveIndicator';
 import GardenStats from '@/components/GardenStats';
@@ -32,6 +33,7 @@ import GardenAchievements from '@/components/GardenAchievements';
 import MoonPhaseGardening from '@/components/MoonPhaseGardening';
 import SmartSuggestions from '@/components/SmartSuggestions';
 import GardenSupplyCalculator from '@/components/GardenSupplyCalculator';
+import GardenCostTracker from '@/components/GardenCostTracker';
 
 function DraggablePlant({ plant }: { plant: Plant }) {
   const { selectedPlantId, setSelectedPlant } = useGardenStore();
@@ -370,6 +372,7 @@ export default function Home() {
     importGarden,
     importFromShare,
     zone,
+    setZone,
   } = useGardenStore();
   const [activePlant, setActivePlant] = useState<Plant | null>(null);
   const [showRelationships, setShowRelationships] = useState(true);
@@ -377,7 +380,9 @@ export default function Home() {
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'vegetable' | 'herb' | 'fruit'>('all');
   const [selectedPlacedPlant, setSelectedPlacedPlant] = useState<{plant: Plant; x: number; y: number} | null>(null);
   const [darkMode, setDarkMode] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabId>('garden');
   const [hoveredCell, setHoveredCell] = useState<{ x: number; y: number } | null>(null);
+  const [showCostTracker, setShowCostTracker] = useState(false);
   
   // Toggle dark mode on document
   useEffect(() => {
@@ -557,8 +562,13 @@ export default function Home() {
       onDragEnd={handleDragEnd}
     >
       <WelcomeModal />
-      <main className="min-h-screen p-3 md:p-8 bg-gradient-to-b from-green-50 to-white dark:from-green-900 dark:to-gray-900 transition-colors">
+      <SideNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <main className={`min-h-screen p-3 md:p-8 bg-gradient-to-b from-green-50 to-white dark:from-green-900 dark:to-gray-900 transition-colors ${!isMobile ? 'ml-16 md:ml-52' : 'pb-20'}`}>
         <div className="max-w-6xl mx-auto">
+          
+          {/* Only show header on Garden tab */}
+          {activeTab === 'garden' && (
+          <>
           {/* Header */}
           <header className="mb-4 md:mb-8">
             <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -583,6 +593,79 @@ export default function Home() {
               Drag plants onto the grid. Green = companions, Red = avoid!
             </p>
           </header>
+          </>
+          )}
+          
+          {/* Show alternative content based on active tab */}
+          {activeTab === 'calendar' && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
+              <h2 className="font-semibold text-gray-700 dark:text-gray-200 mb-4">📅 Planting Calendar</h2>
+              <PlantingCalendar placedPlants={placedPlants} />
+            </div>
+          )}
+          
+          {activeTab === 'stats' && (
+            <div className="space-y-4">
+              <GardenStats placedPlants={placedPlants} />
+              <GardenTips placedPlants={placedPlants} />
+              <YieldTracker />
+            </div>
+          )}
+          
+          {activeTab === 'weather' && (
+            <WeatherWidget zone={zone} />
+          )}
+          
+          {activeTab === 'journal' && (
+            <GardenJournal />
+          )}
+          
+          {activeTab === 'settings' && (
+            <div className="space-y-4">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
+                <h2 className="font-semibold text-gray-700 dark:text-gray-200 mb-4">⚙️ Settings</h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">USDA Zone</label>
+                    <select
+                      value={zone}
+                      onChange={(e) => setZone(Number(e.target.value))}
+                      className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"
+                    >
+                      {[3,4,5,6,7,8,9,10,11].map(z => (
+                        <option key={z} value={z}>Zone {z}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Dark Mode</span>
+                    <button
+                      onClick={() => setDarkMode(!darkMode)}
+                      className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700"
+                    >
+                      {darkMode ? '☀️' : '🌙'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <GardenManager />
+              <GardenShare />
+              
+              {/* Cost Tracker Button */}
+              <button
+                onClick={() => setShowCostTracker(true)}
+                className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold py-3 px-4 rounded-xl shadow-md transition-all hover:shadow-lg flex items-center justify-center gap-2"
+              >
+                <span>💰</span> Garden Cost Tracker
+              </button>
+              
+              <GardenCostTracker isOpen={showCostTracker} onClose={() => setShowCostTracker(false)} />
+            </div>
+          )}
+          
+          {/* Garden tab content */}
+          {activeTab === 'garden' && (
+          <>
           
           {/* Main content - responsive layout */}
           <div className="flex flex-col md:flex-row gap-4 md:gap-8">
@@ -937,8 +1020,12 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </>
+          )}
         </div>
       </main>
+      
+      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
       
       <DragOverlay>
         {activePlant && <DragOverlayPlant plant={activePlant} />}
