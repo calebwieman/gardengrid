@@ -26,6 +26,8 @@ import SuccessionPlanting from '@/components/SuccessionPlanting';
 import GardenThemes from '@/components/GardenThemes';
 import YieldTracker from '@/components/YieldTracker';
 import RecipeSuggestions from '@/components/RecipeSuggestions';
+import GardenPhotoGallery from '@/components/GardenPhotoGallery';
+import GardenReminders from '@/components/GardenReminders';
 
 function DraggablePlant({ plant }: { plant: Plant }) {
   const { selectedPlantId, setSelectedPlant } = useGardenStore();
@@ -766,6 +768,12 @@ export default function Home() {
               
               {/* Recipe Suggestions - Based on what's planted */}
               <RecipeSuggestions placedPlants={placedPlants} />
+              
+              {/* Garden Photo Gallery - Upload and track garden photos */}
+              <GardenPhotoGallery />
+              
+              {/* Garden Reminders - Task notifications and scheduling */}
+              <GardenReminders />
               
               {/* Garden Stats */}
               <GardenStats placedPlants={placedPlants} />

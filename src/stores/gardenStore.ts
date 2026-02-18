@@ -32,6 +32,30 @@ export interface PestIssue {
   resolved: boolean;
 }
 
+export interface Reminder {
+  id: string;
+  type: 'water' | 'fertilize' | 'harvest' | 'check' | 'custom';
+  plantId?: string;
+  plantX?: number;
+  plantY?: number;
+  title: string;
+  notes?: string;
+  dueDate: string; // ISO date
+  completed: boolean;
+  snoozedUntil?: string;
+  recurringDays?: number; // If set, repeats every N days
+  createdAt: string;
+}
+
+export interface Notification {
+  id: string;
+  message: string;
+  type: 'info' | 'warning' | 'success' | 'harvest_ready';
+  plantId?: string;
+  read: boolean;
+  createdAt: string;
+}
+
 export interface Garden {
   id: string;
   name: string;
@@ -40,6 +64,7 @@ export interface Garden {
   journalEntries: JournalEntry[];
   pestIssues: PestIssue[];
   rotationHistory: Record<string, string[]>; // year -> plant families per cell [x-y]: [family, family, ...]
+  reminders: Reminder[];
   createdAt: string;
   updatedAt: string;
 }
@@ -61,6 +86,11 @@ interface GardenState {
   journalEntries: JournalEntry[];
   pestIssues: PestIssue[];
   rotationHistory: Record<string, string[]>; // year -> plant families per cell
+  
+  // Reminders & Notifications
+  reminders: Reminder[];
+  notifications: Notification[];
+  unreadNotificationCount: number;
   
   // USDA Zone for frost dates and weather
   zone: number;
@@ -114,6 +144,17 @@ interface GardenState {
   // Share
   getShareUrl: () => string;
   importFromShare: () => boolean;
+  // Reminders
+  addReminder: (reminder: Omit<Reminder, 'id' | 'createdAt'>) => void;
+  completeReminder: (id: string) => void;
+  snoozeReminder: (id: string, days: number) => void;
+  deleteReminder: (id: string) => void;
+  getUpcomingReminders: () => Reminder[];
+  getOverdueReminders: () => Reminder[];
+  // Notifications
+  addNotification: (message: string, type: Notification['type'], plantId?: string) => void;
+  markNotificationRead: (id: string) => void;
+  clearNotifications: () => void;
 }
 
 export const useGardenStore = create<GardenState>()(
@@ -129,6 +170,7 @@ export const useGardenStore = create<GardenState>()(
         journalEntries: [],
         pestIssues: [],
         rotationHistory: {},
+        reminders: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }],
@@ -145,6 +187,9 @@ export const useGardenStore = create<GardenState>()(
       journalEntries: [],
       pestIssues: [],
       rotationHistory: {},
+      reminders: [],
+      notifications: [],
+      unreadNotificationCount: 0,
       zone: 6, // Default USDA zone
       soilType: null, // No soil type selected yet
       history: [],
@@ -162,6 +207,7 @@ export const useGardenStore = create<GardenState>()(
           journalEntries: [],
           pestIssues: [],
           rotationHistory: {},
+          reminders: [],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -174,6 +220,7 @@ export const useGardenStore = create<GardenState>()(
           journalEntries: [],
           pestIssues: [],
           rotationHistory: {},
+          reminders: [],
           history: [],
           historyIndex: -1,
         });
@@ -195,6 +242,7 @@ export const useGardenStore = create<GardenState>()(
           journalEntries: garden.journalEntries,
           pestIssues: garden.pestIssues || [],
           rotationHistory: garden.rotationHistory || {},
+          reminders: garden.reminders || [],
           history: [garden.placedPlants],
           historyIndex: 0,
         });
@@ -238,6 +286,7 @@ export const useGardenStore = create<GardenState>()(
           journalEntries: [...garden.journalEntries],
           pestIssues: [...(garden.pestIssues || [])],
           rotationHistory: { ...garden.rotationHistory },
+          reminders: [...(garden.reminders || [])],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -257,11 +306,11 @@ export const useGardenStore = create<GardenState>()(
       
       // Update the active garden in the gardens array
       updateActiveGarden: () => {
-        const { activeGardenId, gardens, gardenName, gridSize, placedPlants, journalEntries, pestIssues, rotationHistory } = get();
+        const { activeGardenId, gardens, gardenName, gridSize, placedPlants, journalEntries, pestIssues, rotationHistory, reminders } = get();
         set({
           gardens: gardens.map(g => 
             g.id === activeGardenId 
-              ? { ...g, name: gardenName, gridSize, placedPlants, journalEntries, pestIssues, rotationHistory, updatedAt: new Date().toISOString() }
+              ? { ...g, name: gardenName, gridSize, placedPlants, journalEntries, pestIssues, rotationHistory, reminders, updatedAt: new Date().toISOString() }
               : g
           ),
         });
@@ -626,6 +675,7 @@ export const useGardenStore = create<GardenState>()(
             journalEntries: [],
             pestIssues: shareData.pestIssues || [],
             rotationHistory: shareData.rotationHistory || {},
+            reminders: shareData.reminders || [],
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           };
@@ -650,6 +700,111 @@ export const useGardenStore = create<GardenState>()(
           return false;
         }
       },
+      
+      // Reminders
+      addReminder: (reminder) => {
+        const newReminder: Reminder = {
+          ...reminder,
+          id: `reminder-${Date.now()}`,
+          createdAt: new Date().toISOString(),
+        };
+        set((state) => ({ reminders: [newReminder, ...state.reminders] }));
+        get().updateActiveGarden();
+      },
+      
+      completeReminder: (id) => {
+        const { reminders } = get();
+        const reminder = reminders.find(r => r.id === id);
+        
+        if (reminder?.recurringDays) {
+          // For recurring reminders, create a new one
+          const nextDue = new Date();
+          nextDue.setDate(nextDue.getDate() + reminder.recurringDays);
+          
+          set((state) => ({
+            reminders: state.reminders.map(r => 
+              r.id === id 
+                ? { ...r, completed: true, dueDate: nextDue.toISOString() }
+                : r
+            ).concat([{
+              ...reminder,
+              id: `reminder-${Date.now()}`,
+              dueDate: nextDue.toISOString(),
+              completed: false,
+              createdAt: new Date().toISOString(),
+            }])
+          }));
+        } else {
+          set((state) => ({ 
+            reminders: state.reminders.map(r => 
+              r.id === id ? { ...r, completed: true } : r
+            )
+          }));
+        }
+        get().updateActiveGarden();
+      },
+      
+      snoozeReminder: (id, days) => {
+        const snoozeUntil = new Date();
+        snoozeUntil.setDate(snoozeUntil.getDate() + days);
+        
+        set((state) => ({ 
+          reminders: state.reminders.map(r => 
+            r.id === id ? { ...r, snoozedUntil: snoozeUntil.toISOString() } : r
+          )
+        }));
+        get().updateActiveGarden();
+      },
+      
+      deleteReminder: (id) => {
+        set((state) => ({ reminders: state.reminders.filter(r => r.id !== id) }));
+        get().updateActiveGarden();
+      },
+      
+      getUpcomingReminders: () => {
+        const { reminders } = get();
+        const now = new Date();
+        return reminders
+          .filter(r => !r.completed && new Date(r.dueDate) > now && (!r.snoozedUntil || new Date(r.snoozedUntil) <= now))
+          .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+      },
+      
+      getOverdueReminders: () => {
+        const { reminders } = get();
+        const now = new Date();
+        return reminders
+          .filter(r => !r.completed && new Date(r.dueDate) < now && (!r.snoozedUntil || new Date(r.snoozedUntil) <= now))
+          .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+      },
+      
+      // Notifications
+      addNotification: (message, type, plantId) => {
+        const newNotification: Notification = {
+          id: `notif-${Date.now()}`,
+          message,
+          type,
+          plantId,
+          read: false,
+          createdAt: new Date().toISOString(),
+        };
+        set((state) => ({ 
+          notifications: [newNotification, ...state.notifications].slice(0, 50),
+          unreadNotificationCount: state.unreadNotificationCount + 1,
+        }));
+      },
+      
+      markNotificationRead: (id) => {
+        set((state) => ({
+          notifications: state.notifications.map(n => 
+            n.id === id ? { ...n, read: true } : n
+          ),
+          unreadNotificationCount: Math.max(0, state.unreadNotificationCount - 1),
+        }));
+      },
+      
+      clearNotifications: () => {
+        set({ notifications: [], unreadNotificationCount: 0 });
+      },
     }),
     {
       name: 'gardengrid-storage',
@@ -659,6 +814,8 @@ export const useGardenStore = create<GardenState>()(
         hasVisited: state.hasVisited,
         zone: state.zone,
         soilType: state.soilType,
+        notifications: state.notifications,
+        reminders: state.reminders,
       }),
     }
   )

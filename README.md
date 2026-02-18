@@ -56,6 +56,7 @@ src/
 - [x] Iteration 21: Garden Themes - pre-designed garden layouts (Pizza, Salsa, Salad, Herb Spiral, Three Sisters, Butterfly, Soup, Pickling, Asian, Square Foot)
 - [x] Iteration 22: Yield Tracker - set expected yields per plant, log harvests, track expected vs actual yields with progress bars and summary dashboard
 - [x] Iteration 23: Recipe Suggestions - generates recipe ideas based on what's planted in the garden, with ingredients, cooking time, difficulty, and match percentage
+- [x] Iteration 24: Garden Photo Gallery - upload photos to document garden progress over time with captions and dates
 
 ## Features (Coming Soon)
 
