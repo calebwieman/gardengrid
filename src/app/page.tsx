@@ -178,6 +178,55 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Screenshot Showcase */}
+      <section className="py-20 px-4 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold text-center text-gray-800 mb-4">
+            See It In Action
+          </h2>
+          <p className="text-center text-gray-600 mb-12">
+            From planning to harvesting, GardenGrid has you covered
+          </p>
+          
+          {/* Journal Feature */}
+          <div className="mb-16">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-2xl">📔</span>
+              <h3 className="text-xl font-bold text-gray-800">Garden Journal</h3>
+            </div>
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+              <img 
+                src="/screenshot-journal.jpg" 
+                alt="Garden Journal feature showing plant growth tracking, observations, and harvest logs"
+                className="w-full max-h-96 object-cover"
+              />
+            </div>
+            <p className="mt-4 text-gray-600 text-center">
+              Document your garden journey with notes, photos, and harvest records
+            </p>
+          </div>
+          
+          {/* More features coming soon */}
+          <div className="grid md:grid-cols-3 gap-6 mt-12">
+            <FeaturePreview 
+              emoji="🌤️"
+              title="Weather Widget"
+              description="Real-time weather with frost alerts"
+            />
+            <FeaturePreview 
+              emoji="🤖"
+              title="AI Assistant"
+              description="Get personalized gardening advice"
+            />
+            <FeaturePreview 
+              emoji="📸"
+              title="Photo Gallery"
+              description="Track your garden over time"
+            />
+          </div>
+        </div>
+      </section>
+
       {/* Showcase */}
       <section className="py-20 px-4 bg-green-50">
         <div className="max-w-6xl mx-auto">
@@ -351,6 +400,16 @@ function ThemeCard({ emoji, name, plants }: { emoji: string; name: string; plant
       <div className="text-4xl mb-3 text-center">{emoji}</div>
       <h3 className="font-bold text-gray-800 mb-1">{name}</h3>
       <p className="text-xs text-gray-500">{plants}</p>
+    </div>
+  );
+}
+
+function FeaturePreview({ emoji, title, description }: { emoji: string; title: string; description: string }) {
+  return (
+    <div className="bg-gray-50 p-6 rounded-xl text-center">
+      <span className="text-4xl mb-4 block">{emoji}</span>
+      <h4 className="font-bold text-gray-800 mb-2">{title}</h4>
+      <p className="text-sm text-gray-600">{description}</p>
     </div>
   );
 }
