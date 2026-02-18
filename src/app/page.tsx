@@ -24,6 +24,7 @@ import GardenTasks from '@/components/GardenTasks';
 import GardenAnalytics from '@/components/GardenAnalytics';
 import SuccessionPlanting from '@/components/SuccessionPlanting';
 import GardenThemes from '@/components/GardenThemes';
+import YieldTracker from '@/components/YieldTracker';
 
 function DraggablePlant({ plant }: { plant: Plant }) {
   const { selectedPlantId, setSelectedPlant } = useGardenStore();
@@ -758,6 +759,9 @@ export default function Home() {
               
               {/* Succession Planting Scheduler */}
               <SuccessionPlanting />
+              
+              {/* Yield Tracker - Track expected vs actual yields */}
+              <YieldTracker />
               
               {/* Garden Stats */}
               <GardenStats placedPlants={placedPlants} />
