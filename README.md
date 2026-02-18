@@ -46,6 +46,7 @@ src/
 - [x] Iteration 11: Mobile responsiveness + welcome modal + UI polish
 - [x] Iteration 12: Plant lifecycle tracking (seedling → growing → ready) + harvest date predictions + 60+ plants
 - [x] Iteration 13: Garden journal - add notes, observations, harvests, problems
+- [x] Iteration 14: Export garden as image (PNG download)
 
 ## Features (Coming Soon)
 

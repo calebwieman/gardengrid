@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import html2canvas from 'html2canvas';
 import { DndContext, DragEndEvent, DragOverlay, useSensor, useSensors, PointerSensor, useDraggable, useDroppable, TouchSensor } from '@dnd-kit/core';
 import { useGardenStore, PlacedPlant, PlantStage } from '@/stores/gardenStore';
 import { plants, getPlantById, Plant } from '@/lib/plants';
@@ -443,8 +444,32 @@ export default function Home() {
     e.target.value = ''; // Reset input
   };
   
+  // Export garden as image
+  const handleExportImage = async () => {
+    if (!gardenGridRef.current) return;
+    setIsExporting(true);
+    try {
+      const canvas = await html2canvas(gardenGridRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+      } as any);
+      const url = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `${gardenName.replace(/\s+/g, '-').toLowerCase()}-garden-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = url;
+      link.click();
+    } catch (error) {
+      console.error('Failed to export image:', error);
+      alert('Failed to export image. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+  
   const [isMobile, setIsMobile] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const gardenGridRef = useRef<HTMLDivElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
   
   // Check for mobile viewport
   useEffect(() => {
@@ -655,6 +680,22 @@ export default function Home() {
                 </label>
               </div>
               
+              {/* Export as Image */}
+              <button
+                onClick={handleExportImage}
+                disabled={isExporting || placedPlants.length === 0}
+                className="w-full px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isExporting ? (
+                  <>⏳ Exporting...</>
+                ) : (
+                  <>🖼️ Save as Image</>
+                )}
+              </button>
+              {placedPlants.length === 0 && (
+                <p className="text-xs text-gray-400 text-center">Add plants to your garden to export as image</p>
+              )}
+              
               {/* Garden Templates */}
               <GardenTemplates />
               
@@ -784,6 +825,7 @@ export default function Home() {
                 {/* Grid with relationship lines */}
                 <div className="relative overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0">
                   <div 
+                    ref={gardenGridRef}
                     className="grid gap-1 bg-gray-200 dark:bg-gray-600 p-1 rounded mx-auto"
                     style={{ 
                       gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
