@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useAuth } from '@/lib/auth';
 import { PRICE_IDS } from '@/lib/stripe';
 
 type Plan = 'monthly' | 'lifetime';
 
 export default function PricingSection() {
+  const { user, isPro } = useAuth();
   const [loading, setLoading] = useState<Plan | null>(null);
 
   const handleSubscribe = async (plan: Plan) => {
@@ -60,7 +62,7 @@ export default function PricingSection() {
               <li className="text-gray-400">✗ AI Assistant</li>
             </ul>
             <button className="w-full py-2 bg-gray-100 text-gray-600 font-medium rounded-lg cursor-default">
-              Current Plan
+              {isPro ? 'Active' : 'Current Plan'}
             </button>
           </div>
           

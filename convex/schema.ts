@@ -8,6 +8,13 @@ export default defineSchema({
     name: v.optional(v.string()),
     image: v.optional(v.string()),
     createdAt: v.number(),
+    stripeCustomerId: v.optional(v.string()),
+    subscriptionStatus: v.optional(v.union(
+      v.literal("free"),
+      v.literal("pro_monthly"),
+      v.literal("pro_lifetime")
+    )),
+    subscriptionEndDate: v.optional(v.number()),
   }).index("email", ["email"]),
 
   // User gardens
