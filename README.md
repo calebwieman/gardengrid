@@ -63,6 +63,7 @@ src/
 - [x] Iteration 28: Garden Cost Tracker - track garden expenses over time with categories, monthly breakdown, and spending analysis
 - [x] Iteration 29: Garden Health Score - comprehensive dashboard showing companion planting, diversity, spacing, and seasonal scores with actionable suggestions
 - [x] Iteration 30: Garden Backup & Import/Export - export single or all gardens to JSON, import gardens from files, automatic backup timestamp tracking
+- [x] Iteration 31: Integrated Pest Tracker + Crop Rotation Planner - two existing components now accessible via navigation tabs
 
 ## Features (Coming Soon)
 

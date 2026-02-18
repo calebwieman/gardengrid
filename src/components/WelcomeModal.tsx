@@ -39,61 +39,60 @@ export default function WelcomeModal() {
         }`}
       >
         <div 
-          className={`bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 transform transition-all duration-300 ${
+          className={`bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6 transform transition-all duration-300 ${
             isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
           }`}
         >
           {/* Header with icon */}
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-              <span className="text-4xl">🌱</span>
+          <div className="text-center mb-4">
+            <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-full mb-3">
+              <span className="text-2xl sm:text-4xl">🌱</span>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800">Welcome to GardenGrid!</h2>
-            <p className="text-gray-600 mt-2">Your intelligent garden planning companion</p>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Welcome to GardenGrid!</h2>
+            <p className="text-gray-600 mt-1 text-sm">Your intelligent garden planning companion</p>
           </div>
           
           {/* Features */}
-          <div className="space-y-4 mb-6">
-            <div className="flex items-start gap-3 p-3 bg-green-50 rounded-xl">
-              <span className="text-2xl">🪴</span>
+          <div className="space-y-2 sm:space-y-3 mb-4">
+            <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-green-50 rounded-xl">
+              <span className="text-xl">🪴</span>
               <div>
-                <h3 className="font-semibold text-gray-800">Drag & Drop Plants</h3>
-                <p className="text-sm text-gray-600">Select a plant and tap any cell to place it in your garden</p>
+                <h3 className="font-semibold text-gray-800 text-sm">Drag & Drop Plants</h3>
+                <p className="text-xs text-gray-600">Select a plant and tap any cell to place it</p>
               </div>
             </div>
             
-            <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-xl">
-              <span className="text-2xl">💚</span>
+            <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-blue-50 rounded-xl">
+              <span className="text-xl">💚</span>
               <div>
-                <h3 className="font-semibold text-gray-800">Companion Planting</h3>
-                <p className="text-sm text-gray-600">Green lines show good neighbors, red lines show conflicts</p>
+                <h3 className="font-semibold text-gray-800 text-sm">Companion Planting</h3>
+                <p className="text-xs text-gray-600">Green = good neighbors, Red = conflicts</p>
               </div>
             </div>
             
-            <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-xl">
-              <span className="text-2xl">📅</span>
+            <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-purple-50 rounded-xl">
+              <span className="text-xl">📅</span>
               <div>
-                <h3 className="font-semibold text-gray-800">Planting Calendar</h3>
-                <p className="text-sm text-gray-600">See the best times to plant based on your USDA zone</p>
+                <h3 className="font-semibold text-gray-800 text-sm">Planting Calendar</h3>
+                <p className="text-xs text-gray-600">Best times to plant based on USDA zone</p>
               </div>
             </div>
           </div>
           
           {/* Tips */}
-          <div className="bg-amber-50 rounded-xl p-4 mb-6">
-            <h4 className="font-semibold text-amber-800 mb-2">💡 Quick Tips</h4>
-            <ul className="text-sm text-amber-700 space-y-1">
-              <li>• Each grid cell represents 1 square foot</li>
-              <li>• Click a plant to select, click grid to place</li>
-              <li>• Use the compatibility score to optimize your layout</li>
-              <li>• Your garden saves automatically!</li>
+          <div className="bg-amber-50 rounded-xl p-3 mb-4">
+            <h4 className="font-semibold text-amber-800 mb-1 text-sm">💡 Quick Tips</h4>
+            <ul className="text-xs text-amber-700 space-y-0.5">
+              <li>• Each cell = 1 square foot</li>
+              <li>• Click plant → click grid to place</li>
+              <li>• Auto-saves automatically!</li>
             </ul>
           </div>
           
           {/* CTA Button */}
           <button
             onClick={handleClose}
-            className="w-full py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors"
+            className="w-full py-2 sm:py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors"
           >
             Start Planning! 🚀
           </button>

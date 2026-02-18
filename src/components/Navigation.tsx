@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-export type TabId = 'garden' | 'calendar' | 'stats' | 'weather' | 'journal' | 'settings';
+export type TabId = 'garden' | 'calendar' | 'stats' | 'weather' | 'journal' | 'pests' | 'rotation' | 'settings';
 
 interface NavItem {
   id: TabId;
@@ -69,6 +69,31 @@ const navItems: NavItem[] = [
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+      </svg>
+    )
+  },
+  { 
+    id: 'pests', 
+    label: 'Pests',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M8 2h8l2 5H6l2-5z" />
+        <path d="M12 7v5" />
+        <path d="M9 9h6" />
+        <circle cx="9" cy="14" r="1" />
+        <circle cx="15" cy="14" r="1" />
+        <path d="M8 14h8" />
+        <path d="M7 17h10" />
+      </svg>
+    )
+  },
+  { 
+    id: 'rotation', 
+    label: 'Rotation',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 12a9 9 0 1 1-9-9" />
+        <polyline points="21 3 21 9 15 9" />
       </svg>
     )
   },
