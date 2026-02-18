@@ -30,6 +30,7 @@ import GardenPhotoGallery from '@/components/GardenPhotoGallery';
 import GardenReminders from '@/components/GardenReminders';
 import GardenAchievements from '@/components/GardenAchievements';
 import MoonPhaseGardening from '@/components/MoonPhaseGardening';
+import SmartSuggestions from '@/components/SmartSuggestions';
 
 function DraggablePlant({ plant }: { plant: Plant }) {
   const { selectedPlantId, setSelectedPlant } = useGardenStore();
@@ -913,8 +914,8 @@ export default function Home() {
                     className="grid gap-0.5 md:gap-1 bg-gray-200 dark:bg-gray-600 p-0.5 md:p-1 rounded mx-auto touch-none"
                     style={{ 
                       gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
-                      maxWidth: '100vw - 40px',
-                      width: isMobile ? `calc(100vw - 40px)` : 'fit-content',
+                      width: '100%',
+                      maxWidth: isMobile ? 'calc(100vw - 32px)' : '600px',
                       aspectRatio: '1 / 1'
                     }}
                   >
