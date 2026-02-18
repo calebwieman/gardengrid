@@ -889,9 +889,13 @@ export default function Home() {
                       <button
                         key={plant.id}
                         onClick={() => {
-                          placePlant(cellPickerOpen.x, cellPickerOpen.y);
-                          setSelectedPlant(null); // Clear selection so next tap opens picker again
-                          setCellPickerOpen(null);
+                          setSelectedPlant(plant.id);
+                          // Delay placePlant slightly to let state update
+                          setTimeout(() => {
+                            placePlant(cellPickerOpen.x, cellPickerOpen.y);
+                            setSelectedPlant(null); // Clear so next tap opens picker
+                            setCellPickerOpen(null);
+                          }, 10);
                         }}
                         className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
