@@ -7,7 +7,6 @@ import { getPlantById } from '@/lib/plants';
 
 export default function PestTracker() {
   const { placedPlants, pestIssues, addPestIssue, removePestIssue, resolvePestIssue } = useGardenStore();
-  const [isOpen, setIsOpen] = useState(false);
   const [selectedPest, setSelectedPest] = useState<Pest | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -76,14 +75,11 @@ export default function PestTracker() {
   
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-      {/* Header */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-      >
+      {/* Header - Always Expanded */}
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3">
           <span className="text-2xl">🐛</span>
-          <div className="text-left">
+          <div>
             <h3 className="font-semibold text-gray-800 dark:text-white">Pest Tracker</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {activeIssues.length} active issue{activeIssues.length !== 1 ? 's' : ''}
@@ -91,30 +87,10 @@ export default function PestTracker() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {activeIssues.length > 0 && (
-            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-              activeIssues.some(i => i.severity === 'high') 
-                ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-                : activeIssues.some(i => i.severity === 'medium')
-                  ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
-                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-            }`}>
-              {activeIssues.length}
-            </span>
-          )}
-          <svg 
-            className={`w-5 h-5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-            fill="none" viewBox="0 0 24 24" stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </button>
+      </div>
       
       {/* Content */}
-      {isOpen && (
-        <div className="border-t border-gray-200 dark:border-gray-700">
+      <div className="border-t border-gray-200 dark:border-gray-700">
           {/* Quick Stats */}
           <div className="p-4 bg-gray-50 dark:bg-gray-900 grid grid-cols-3 gap-4">
             <div className="text-center">
@@ -381,7 +357,6 @@ export default function PestTracker() {
             </div>
           )}
         </div>
-      )}
     </div>
   );
 }
