@@ -64,6 +64,7 @@ src/
 - [x] Iteration 29: Garden Health Score - comprehensive dashboard showing companion planting, diversity, spacing, and seasonal scores with actionable suggestions
 - [x] Iteration 30: Garden Backup & Import/Export - export single or all gardens to JSON, import gardens from files, automatic backup timestamp tracking
 - [x] Iteration 31: Integrated Pest Tracker + Crop Rotation Planner - two existing components now accessible via navigation tabs
+- [x] Iteration 32: AI Garden Assistant - chatbot that answers gardening questions with contextual advice based on your garden
 
 ## Features (Coming Soon)
 
