@@ -91,6 +91,7 @@ interface BottomNavProps {
 
 export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   const [isMobile, setIsMobile] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -99,14 +100,31 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Check for dark mode
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setDarkMode(document.documentElement.classList.contains('dark'));
+    };
+    checkDarkMode();
+    
+    // Listen for class changes on the document
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, { 
+      attributes: true, 
+      attributeFilter: ['class'] 
+    });
+    
+    return () => observer.disconnect();
+  }, []);
+
   if (!isMobile) return null;
 
   return (
     <nav 
       className="fixed bottom-0 left-0 right-0 z-50"
       style={{ 
-        background: "rgba(255, 255, 255, 0.98)",
-        borderTop: "1px solid #e5e7eb",
+        background: darkMode ? 'rgba(31, 41, 55, 0.98)' : 'rgba(255, 255, 255, 0.98)',
+        borderTop: darkMode ? '1px solid #374151' : '1px solid #e5e7eb',
         paddingBottom: "env(safe-area-inset-bottom)"
       }}
     >
@@ -127,14 +145,14 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
                   padding: '8px',
                   borderRadius: '12px',
                   background: isActive ? 'rgba(34, 197, 94, 0.15)' : 'transparent',
-                  color: isActive ? '#16a34a' : '#6b7280',
+                  color: isActive ? '#16a34a' : (darkMode ? '#9ca3af' : '#6b7280'),
                 }}
               >
                 {item.icon}
               </div>
               <span 
                 className="text-[10px] font-medium mt-1"
-                style={{ color: isActive ? '#16a34a' : '#6b7280' }}
+                style={{ color: isActive ? '#16a34a' : (darkMode ? '#9ca3af' : '#6b7280') }}
               >
                 {item.label}
               </span>

@@ -34,6 +34,7 @@ import MoonPhaseGardening from '@/components/MoonPhaseGardening';
 import SmartSuggestions from '@/components/SmartSuggestions';
 import GardenSupplyCalculator from '@/components/GardenSupplyCalculator';
 import GardenCostTracker from '@/components/GardenCostTracker';
+import GardenHealthScore from '@/components/GardenHealthScore';
 
 function DraggablePlant({ plant }: { plant: Plant }) {
   const { selectedPlantId, setSelectedPlant } = useGardenStore();
@@ -606,6 +607,7 @@ export default function Home() {
           
           {activeTab === 'stats' && (
             <div className="space-y-4">
+              <GardenHealthScore />
               <GardenStats placedPlants={placedPlants} />
               <GardenTips placedPlants={placedPlants} />
               <YieldTracker />
