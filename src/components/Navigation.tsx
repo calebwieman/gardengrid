@@ -82,14 +82,18 @@ const navItems: NavItem[] = [
     id: 'pests', 
     label: 'Pests',
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M8 2h8l2 5H6l2-5z" />
-        <path d="M12 7v5" />
-        <path d="M9 9h6" />
-        <circle cx="9" cy="14" r="1" />
-        <circle cx="15" cy="14" r="1" />
-        <path d="M8 14h8" />
-        <path d="M7 17h10" />
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="7"/>
+        <path d="M12 5v2"/>
+        <path d="M12 17v2"/>
+        <path d="M5 12H3"/>
+        <path d="M21 12h-2"/>
+        <path d="M7.5 7.5l-1.5 1.5"/>
+        <path d="M17.5 17.5l-1.5 1.5"/>
+        <path d="M7.5 16.5l-1.5-1.5"/>
+        <path d="M17.5 6.5l-1.5-1.5"/>
+        <circle cx="9" cy="9" r="1" fill="currentColor"/>
+        <circle cx="15" cy="9" r="1" fill="currentColor"/>
       </svg>
     )
   },
