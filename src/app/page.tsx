@@ -103,38 +103,6 @@ function DroppableCell({ x, y, showRelationships, relationships, onViewDetails, 
 }) {
   const { placedPlants, selectedPlantId, placePlant, removePlant, updatePlantStage } = useGardenStore();
   
-  // Direct plant placement - gets current state directly from store to avoid stale closure
-  const placePlantDirect = (plantId: string, x: number, y: number) => {
-    // Use getState to get the freshest placedPlants
-    const currentPlants = useGardenStore.getState().placedPlants;
-    const currentSetPlacedPlants = useGardenStore.getState().setPlacedPlants;
-    const now = new Date().toISOString();
-    const existingIndex = currentPlants.findIndex(p => p.x === x && p.y === y);
-    
-    if (existingIndex >= 0) {
-      // Update existing plant at this location
-      const newPlants = [...currentPlants];
-      newPlants[existingIndex] = {
-        ...newPlants[existingIndex],
-        plantId,
-        plantedAt: now,
-        stage: 'seedling',
-      };
-      currentSetPlacedPlants(newPlants);
-    } else {
-      // Add new plant
-      const newPlant = {
-        id: `${plantId}-${x}-${y}-${Date.now()}`,
-        plantId,
-        x,
-        y,
-        plantedAt: now,
-        stage: 'seedling' as const,
-      };
-      currentSetPlacedPlants([...currentPlants, newPlant]);
-    }
-  };
-  
   const placedPlant = placedPlants.find(p => p.x === x && p.y === y);
   const plantData = placedPlant ? getPlantById(placedPlant.plantId) : null;
   
@@ -412,6 +380,7 @@ export default function Home() {
     importFromShare,
     zone,
     setZone,
+    setPlacedPlants,
   } = useGardenStore();
   const [activePlant, setActivePlant] = useState<Plant | null>(null);
   const [showRelationships, setShowRelationships] = useState(true);
@@ -444,6 +413,38 @@ export default function Home() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+  
+  // Use a ref to always have fresh placedPlants
+  const placedPlantsRef = useRef(placedPlants);
+  placedPlantsRef.current = placedPlants;
+  
+  // Direct plant placement - uses ref to avoid stale closure
+  const placePlantDirect = (plantId: string, x: number, y: number) => {
+    const currentPlants = placedPlantsRef.current;
+    const now = new Date().toISOString();
+    const existingIndex = currentPlants.findIndex(p => p.x === x && p.y === y);
+    
+    if (existingIndex >= 0) {
+      const newPlants = [...currentPlants];
+      newPlants[existingIndex] = {
+        ...newPlants[existingIndex],
+        plantId,
+        plantedAt: now,
+        stage: 'seedling',
+      };
+      useGardenStore.getState().setPlacedPlants(newPlants);
+    } else {
+      const newPlant = {
+        id: `${plantId}-${x}-${y}-${Date.now()}`,
+        plantId,
+        x,
+        y,
+        plantedAt: now,
+        stage: 'seedling' as const,
+      };
+      useGardenStore.getState().setPlacedPlants([...currentPlants, newPlant]);
+    }
+  };
   
   const { relationships, score, companionCount, antagonistCount, spacingWarnings } = useGardenRelationships(placedPlants);
   
