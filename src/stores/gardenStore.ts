@@ -49,6 +49,7 @@ interface GardenState {
   
   // USDA Zone for frost dates and weather
   zone: number;
+  setZone: (zone: number) => void;
   
   // Soil type for recommendations
   soilType: SoilType | null;

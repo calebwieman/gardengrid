@@ -49,6 +49,7 @@ src/
 - [x] Iteration 14: Export garden as image (PNG download)
 - [x] Iteration 15: Weather widget + frost date alerts + planting advice
 - [x] Iteration 16: Garden Care - soil type selection, watering schedule, pest reference
+- [x] Iteration 17: Seed Shopping List - generates shopping list based on placed plants
 
 ## Features (Coming Soon)
 

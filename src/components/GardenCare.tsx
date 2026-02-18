@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useGardenStore } from '@/stores/gardenStore';
-import { soilTypes, SoilType, soilInfos } from '@/lib/soil';
+import { soilTypes, SoilType } from '@/lib/soil';
 import { calculateGardenWatering } from '@/lib/watering';
 import { getPestsForPlants, commonPests } from '@/lib/pests';
 import { getPlantById } from '@/lib/plants';

@@ -16,6 +16,7 @@ import GardenJournal from '@/components/GardenJournal';
 import GardenManager from '@/components/GardenManager';
 import WeatherWidget from '@/components/WeatherWidget';
 import GardenCare from '@/components/GardenCare';
+import SeedList from '@/components/SeedList';
 
 function DraggablePlant({ plant }: { plant: Plant }) {
   const { selectedPlantId, setSelectedPlant } = useGardenStore();
@@ -723,6 +724,9 @@ export default function Home() {
               
               {/* Garden Care - Soil, Watering, Pests */}
               <GardenCare />
+              
+              {/* Seed Shopping List */}
+              <SeedList />
               
               {/* Planting Calendar */}
               <PlantingCalendar placedPlants={placedPlants} />
