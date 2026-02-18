@@ -62,6 +62,7 @@ src/
 - [x] Iteration 27: Garden Supply Calculator - estimates seeds, soil, fertilizer, mulch, and supplies costs based on garden layout
 - [x] Iteration 28: Garden Cost Tracker - track garden expenses over time with categories, monthly breakdown, and spending analysis
 - [x] Iteration 29: Garden Health Score - comprehensive dashboard showing companion planting, diversity, spacing, and seasonal scores with actionable suggestions
+- [x] Iteration 30: Garden Backup & Import/Export - export single or all gardens to JSON, import gardens from files, automatic backup timestamp tracking
 
 ## Features (Coming Soon)
 

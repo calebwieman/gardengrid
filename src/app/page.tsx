@@ -35,6 +35,7 @@ import SmartSuggestions from '@/components/SmartSuggestions';
 import GardenSupplyCalculator from '@/components/GardenSupplyCalculator';
 import GardenCostTracker from '@/components/GardenCostTracker';
 import GardenHealthScore from '@/components/GardenHealthScore';
+import GardenBackup from '@/components/GardenBackup';
 
 function DraggablePlant({ plant }: { plant: Plant }) {
   const { selectedPlantId, setSelectedPlant } = useGardenStore();
@@ -384,6 +385,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<TabId>('garden');
   const [hoveredCell, setHoveredCell] = useState<{ x: number; y: number } | null>(null);
   const [showCostTracker, setShowCostTracker] = useState(false);
+  const [showBackup, setShowBackup] = useState(false);
   
   // Toggle dark mode on document
   useEffect(() => {
@@ -652,6 +654,16 @@ export default function Home() {
               </div>
               <GardenManager />
               <GardenShare />
+              
+              {/* Backup & Import/Export Button */}
+              <button
+                onClick={() => setShowBackup(true)}
+                className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold py-3 px-4 rounded-xl shadow-md transition-all hover:shadow-lg flex items-center justify-center gap-2"
+              >
+                <span>💾</span> Backup & Import
+              </button>
+              
+              <GardenBackup isOpen={showBackup} onClose={() => setShowBackup(false)} />
               
               {/* Cost Tracker Button */}
               <button
