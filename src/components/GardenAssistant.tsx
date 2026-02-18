@@ -66,22 +66,22 @@ Plants in garden: ${gardenPlants.length > 0 ? gardenPlants.map(p => p!.plant.nam
     
     // Planting timing questions
     if (lowerMessage.includes('plant') && (lowerMessage.includes('when') || lowerMessage.includes('now') || lowerMessage.includes('time') || lowerMessage.includes('season'))) {
-      const springPlants = plants.filter(p => p.plantingSeason?.includes('spring')).slice(0, 5);
-      const summerPlants = plants.filter(p => p.plantingSeason?.includes('summer')).slice(0, 5);
+      // Get some common plants
+      const commonPlants = plants.slice(0, 10);
       
       let response = `📅 **Planting Guide for ${season.charAt(0).toUpperCase() + season.slice(1)}**\n\n`;
       
       if (season === 'spring') {
         response += `Great timing! It's perfect planting weather. Here are some ideal crops to start now:\n\n`;
-        response += springPlants.map(p => `🌱 ${p.name} - ${p.daysToMaturity} days`).join('\n');
-        response += `\n\n💡 Tip: Start tomatoes and peppers indoors 6-8 weeks before last frost, then transplant outside.`;
+        response += `🌱 Tomatoes, Peppers, Lettuce, Peas, Spinach, Carrots\n\n`;
+        response += `💡 Tip: Start tomatoes and peppers indoors 6-8 weeks before last frost, then transplant outside.`;
       } else if (season === 'summer') {
         response += `Summer is in full swing! Consider succession planting for continuous harvest:\n\n`;
-        response += summerPlants.map(p => `🌱 ${p.name} - ${p.daysToMaturity} days`).join('\n');
-        response += `\n\n💡 Tip: Water deeply in early morning to reduce evaporation.`;
+        response += `🌱 Beans, Cucumbers, Squash, Corn, Sunflowers\n\n`;
+        response += `💡 Tip: Water deeply in early morning to reduce evaporation. Mulch to retain moisture.`;
       } else if (season === 'fall') {
         response += `Fall is perfect for cool-season crops:\n\n`;
-        response += `🥬 Lettuce, 🥕 Carrots, 🥒 Broccoli, 🧅 Spinach, 🧄 Kale\n\n`;
+        response += `🥬 Lettuce, Carrots, Broccoli, Spinach, Kale, Garlic\n\n`;
         response += `💡 Tip: Plant garlic now for next year's harvest!`;
       } else {
         response += `It's winter! Time to plan next year's garden and order seeds.\n\n`;
@@ -225,7 +225,7 @@ Plants in garden: ${gardenPlants.length > 0 ? gardenPlants.map(p => p!.plant.nam
         response += `**Your Plants:**\n`;
         
         const fullSun = gardenPlants.filter(p => p!.plant.sunNeeds === 'full-sun');
-        const partSun = gardenPlants.filter(p => p!.plant.sunNeeds === 'part-sun');
+        const partSun = gardenPlants.filter(p => p!.plant.sunNeeds === 'partial-sun');
         
         if (fullSun.length > 0) {
           response += `☀️ Full Sun: ${fullSun.map(p => p!.plant.name).join(', ')}\n`;
