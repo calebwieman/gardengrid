@@ -1,0 +1,10 @@
+{
+  "name": "GardenGrid",
+  "short_name": "GardenGrid",
+  "description": "Plan your perfect garden",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f0fdf4",
+  "theme_color": "#22c55e",
+  "icons": []
+}
