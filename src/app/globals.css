@@ -148,3 +148,12 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     break-inside: avoid;
   }
 }
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

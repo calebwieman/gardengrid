@@ -36,6 +36,7 @@ import GardenSupplyCalculator from '@/components/GardenSupplyCalculator';
 import GardenCostTracker from '@/components/GardenCostTracker';
 import GardenHealthScore from '@/components/GardenHealthScore';
 import GardenBackup from '@/components/GardenBackup';
+import GardenAssistant from '@/components/GardenAssistant';
 
 function DraggablePlant({ plant }: { plant: Plant }) {
   const { selectedPlantId, setSelectedPlant } = useGardenStore();
@@ -100,7 +101,36 @@ function DroppableCell({ x, y, showRelationships, relationships, onViewDetails, 
   onHover?: (x: number, y: number) => void;
   onCellTap?: (x: number, y: number) => void;
 }) {
-  const { placedPlants, selectedPlantId, placePlant, removePlant, updatePlantStage } = useGardenStore();
+  const { placedPlants, selectedPlantId, placePlant, removePlant, updatePlantStage, setPlacedPlants } = useGardenStore();
+  
+  // Direct plant placement - doesn't rely on selectedPlantId state
+  const placePlantDirect = (plantId: string, x: number, y: number) => {
+    const now = new Date().toISOString();
+    const existingIndex = placedPlants.findIndex(p => p.x === x && p.y === y);
+    
+    if (existingIndex >= 0) {
+      // Update existing plant at this location
+      const newPlants = [...placedPlants];
+      newPlants[existingIndex] = {
+        ...newPlants[existingIndex],
+        plantId,
+        plantedAt: now,
+        stage: 'seedling',
+      };
+      setPlacedPlants(newPlants);
+    } else {
+      // Add new plant
+      const newPlant = {
+        id: `${plantId}-${x}-${y}-${Date.now()}`,
+        plantId,
+        x,
+        y,
+        plantedAt: now,
+        stage: 'seedling' as const,
+      };
+      setPlacedPlants([...placedPlants, newPlant]);
+    }
+  };
   
   const placedPlant = placedPlants.find(p => p.x === x && p.y === y);
   const plantData = placedPlant ? getPlantById(placedPlant.plantId) : null;
@@ -508,26 +538,6 @@ export default function Home() {
     }
   };
   
-  const [isMobile, setIsMobile] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const gardenGridRef = useRef<HTMLDivElement>(null);
-  const [isExporting, setIsExporting] = useState(false);
-  
-  // Check for mobile viewport
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-  
-  // Close mobile menu when selecting a plant on mobile
-  useEffect(() => {
-    if (isMobile && selectedPlantId) {
-      setShowMobileMenu(false);
-    }
-  }, [selectedPlantId, isMobile]);
-  
   // Check for shared garden URL on load
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -662,6 +672,12 @@ export default function Home() {
           {activeTab === 'rotation' && (
             <div className="space-y-4">
               <CropRotationPlanner />
+            </div>
+          )}
+          
+          {activeTab === 'assistant' && (
+            <div className="space-y-4">
+              <GardenAssistant />
             </div>
           )}
           
@@ -889,13 +905,8 @@ export default function Home() {
                       <button
                         key={plant.id}
                         onClick={() => {
-                          setSelectedPlant(plant.id);
-                          // Delay placePlant slightly to let state update
-                          setTimeout(() => {
-                            placePlant(cellPickerOpen.x, cellPickerOpen.y);
-                            setSelectedPlant(null); // Clear so next tap opens picker
-                            setCellPickerOpen(null);
-                          }, 10);
+                          placePlantDirect(plant.id, cellPickerOpen.x, cellPickerOpen.y);
+                          setCellPickerOpen(null);
                         }}
                         className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
