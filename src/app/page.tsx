@@ -17,6 +17,10 @@ import GardenManager from '@/components/GardenManager';
 import WeatherWidget from '@/components/WeatherWidget';
 import GardenCare from '@/components/GardenCare';
 import SeedList from '@/components/SeedList';
+import PestTracker from '@/components/PestTracker';
+import CropRotationPlanner from '@/components/CropRotationPlanner';
+import GardenShare from '@/components/GardenShare';
+import GardenTasks from '@/components/GardenTasks';
 
 function DraggablePlant({ plant }: { plant: Plant }) {
   const { selectedPlantId, setSelectedPlant } = useGardenStore();
@@ -713,6 +717,9 @@ export default function Home() {
                 <p className="text-xs text-gray-400 text-center">Add plants to your garden to export as image</p>
               )}
               
+              {/* Garden Share */}
+              <GardenShare />
+              
               {/* Garden Templates */}
               <GardenTemplates />
               
@@ -725,8 +732,17 @@ export default function Home() {
               {/* Garden Care - Soil, Watering, Pests */}
               <GardenCare />
               
+              {/* Pest Tracker */}
+              <PestTracker />
+              
+              {/* Crop Rotation Planner */}
+              <CropRotationPlanner />
+              
               {/* Seed Shopping List */}
               <SeedList />
+              
+              {/* Monthly Garden Tasks */}
+              <GardenTasks />
               
               {/* Planting Calendar */}
               <PlantingCalendar placedPlants={placedPlants} />

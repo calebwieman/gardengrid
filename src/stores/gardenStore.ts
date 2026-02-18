@@ -21,12 +21,25 @@ export interface JournalEntry {
   type: 'observation' | 'tip' | 'harvest' | 'problem';
 }
 
+export interface PestIssue {
+  id: string;
+  pestId: string;
+  plantX: number;
+  plantY: number;
+  severity: 'low' | 'medium' | 'high';
+  notes: string;
+  createdAt: string;
+  resolved: boolean;
+}
+
 export interface Garden {
   id: string;
   name: string;
   gridSize: number;
   placedPlants: PlacedPlant[];
   journalEntries: JournalEntry[];
+  pestIssues: PestIssue[];
+  rotationHistory: Record<string, string[]>; // year -> plant families per cell [x-y]: [family, family, ...]
   createdAt: string;
   updatedAt: string;
 }
@@ -46,6 +59,8 @@ interface GardenState {
   hasVisited: boolean;
   mobileMenuOpen: boolean;
   journalEntries: JournalEntry[];
+  pestIssues: PestIssue[];
+  rotationHistory: Record<string, string[]>; // year -> plant families per cell
   
   // USDA Zone for frost dates and weather
   zone: number;
@@ -75,6 +90,10 @@ interface GardenState {
   // Journal
   addJournalEntry: (text: string, type: JournalEntry['type']) => void;
   removeJournalEntry: (id: string) => void;
+  // Pest issues
+  addPestIssue: (pestId: string, plantX: number, plantY: number, severity: PestIssue['severity'], notes: string) => void;
+  removePestIssue: (id: string) => void;
+  resolvePestIssue: (id: string) => void;
   placePlant: (x: number, y: number) => void;
   removePlant: (x: number, y: number) => void;
   clearGarden: () => void;
@@ -87,6 +106,11 @@ interface GardenState {
   // Export/Import
   exportGarden: () => string;
   importGarden: (json: string) => boolean;
+  // Crop rotation
+  saveToRotationHistory: (year: number) => void;
+  getRotationWarnings: () => { x: number; y: number; plantId: string; years: number[]; message: string }[];
+  getRotationSuggestions: () => { family: string; emoji: string; name: string; goodFollowers: string[] }[];
+  clearRotationHistory: () => void;
   // Share
   getShareUrl: () => string;
   importFromShare: () => boolean;
@@ -103,6 +127,8 @@ export const useGardenStore = create<GardenState>()(
         gridSize: 8,
         placedPlants: [],
         journalEntries: [],
+        pestIssues: [],
+        rotationHistory: {},
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }],
@@ -117,6 +143,8 @@ export const useGardenStore = create<GardenState>()(
       hasVisited: false,
       mobileMenuOpen: false,
       journalEntries: [],
+      pestIssues: [],
+      rotationHistory: {},
       zone: 6, // Default USDA zone
       soilType: null, // No soil type selected yet
       history: [],
@@ -132,6 +160,8 @@ export const useGardenStore = create<GardenState>()(
           gridSize: 8,
           placedPlants: [],
           journalEntries: [],
+          pestIssues: [],
+          rotationHistory: {},
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -142,6 +172,8 @@ export const useGardenStore = create<GardenState>()(
           gridSize: 8,
           placedPlants: [],
           journalEntries: [],
+          pestIssues: [],
+          rotationHistory: {},
           history: [],
           historyIndex: -1,
         });
@@ -161,6 +193,8 @@ export const useGardenStore = create<GardenState>()(
           gridHeight: garden.gridSize,
           placedPlants: garden.placedPlants,
           journalEntries: garden.journalEntries,
+          pestIssues: garden.pestIssues || [],
+          rotationHistory: garden.rotationHistory || {},
           history: [garden.placedPlants],
           historyIndex: 0,
         });
@@ -183,6 +217,8 @@ export const useGardenStore = create<GardenState>()(
             gridSize: activeGarden.gridSize,
             placedPlants: activeGarden.placedPlants,
             journalEntries: activeGarden.journalEntries,
+            pestIssues: activeGarden.pestIssues || [],
+            rotationHistory: activeGarden.rotationHistory || {},
           });
         }
       },
@@ -200,6 +236,8 @@ export const useGardenStore = create<GardenState>()(
           gridSize: garden.gridSize,
           placedPlants: [...garden.placedPlants],
           journalEntries: [...garden.journalEntries],
+          pestIssues: [...(garden.pestIssues || [])],
+          rotationHistory: { ...garden.rotationHistory },
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -210,6 +248,8 @@ export const useGardenStore = create<GardenState>()(
           gardenName: newGarden.name,
           placedPlants: newGarden.placedPlants,
           journalEntries: newGarden.journalEntries,
+          pestIssues: newGarden.pestIssues,
+          rotationHistory: newGarden.rotationHistory,
           history: [newGarden.placedPlants],
           historyIndex: 0,
         });
@@ -217,11 +257,11 @@ export const useGardenStore = create<GardenState>()(
       
       // Update the active garden in the gardens array
       updateActiveGarden: () => {
-        const { activeGardenId, gardens, gardenName, gridSize, placedPlants, journalEntries } = get();
+        const { activeGardenId, gardens, gardenName, gridSize, placedPlants, journalEntries, pestIssues, rotationHistory } = get();
         set({
           gardens: gardens.map(g => 
             g.id === activeGardenId 
-              ? { ...g, name: gardenName, gridSize, placedPlants, journalEntries, updatedAt: new Date().toISOString() }
+              ? { ...g, name: gardenName, gridSize, placedPlants, journalEntries, pestIssues, rotationHistory, updatedAt: new Date().toISOString() }
               : g
           ),
         });
@@ -252,6 +292,157 @@ export const useGardenStore = create<GardenState>()(
       removeJournalEntry: (id) => {
         set((state) => ({ journalEntries: state.journalEntries.filter(e => e.id !== id) }));
         get().updateActiveGarden();
+      },
+      
+      // Pest issues
+      addPestIssue: (pestId, plantX, plantY, severity, notes) => {
+        const newIssue: PestIssue = {
+          id: `pest-${Date.now()}`,
+          pestId,
+          plantX,
+          plantY,
+          severity,
+          notes,
+          createdAt: new Date().toISOString(),
+          resolved: false,
+        };
+        set((state) => ({ pestIssues: [newIssue, ...state.pestIssues] }));
+        get().updateActiveGarden();
+      },
+      
+      removePestIssue: (id) => {
+        set((state) => ({ pestIssues: state.pestIssues.filter(i => i.id !== id) }));
+        get().updateActiveGarden();
+      },
+      
+      resolvePestIssue: (id) => {
+        set((state) => ({ 
+          pestIssues: state.pestIssues.map(i => 
+            i.id === id ? { ...i, resolved: !i.resolved } : i
+          ) 
+        }));
+        get().updateActiveGarden();
+      },
+      
+      // Crop Rotation functions
+      saveToRotationHistory: (year: number) => {
+        const { placedPlants, rotationHistory, activeGardenId, gardens } = get();
+        const { getPlantFamily } = require('@/lib/plants');
+        
+        // Build cell key -> family mapping for this year's plantings
+        const yearKey = year.toString();
+        const cellFamilies: Record<string, string> = {};
+        
+        placedPlants.forEach(plant => {
+          const cellKey = `${plant.x}-${plant.y}`;
+          const family = getPlantFamily(plant.plantId);
+          if (family) {
+            if (!cellFamilies[cellKey]) {
+              cellFamilies[cellKey] = family;
+            }
+          }
+        });
+        
+        // Convert to array format for storage
+        const newHistory = { ...rotationHistory };
+        newHistory[yearKey] = Object.entries(cellFamilies).map(([cell, family]) => `${cell}:${family}`);
+        
+        set({ rotationHistory: newHistory });
+        
+        // Also save to the garden
+        const updatedGardens = gardens.map(g => 
+          g.id === activeGardenId 
+            ? { ...g, rotationHistory: newHistory, updatedAt: new Date().toISOString() }
+            : g
+        );
+        set({ gardens: updatedGardens });
+      },
+      
+      getRotationWarnings: () => {
+        const { placedPlants, rotationHistory, gridSize } = get();
+        const { getPlantFamily } = require('@/lib/plants');
+        
+        const currentYear = new Date().getFullYear();
+        const warnings: { x: number; y: number; plantId: string; years: number[]; message: string }[] = [];
+        
+        // Get all previous years
+        const years = Object.keys(rotationHistory).map(Number).sort((a, b) => a - b);
+        
+        placedPlants.forEach(plant => {
+          const cellKey = `${plant.x}-${plant.y}`;
+          const currentFamily = getPlantFamily(plant.plantId);
+          
+          if (!currentFamily) return;
+          
+          years.forEach(year => {
+            const yearData = rotationHistory[year.toString()] || [];
+            const cellEntry = yearData.find((entry: string) => entry.startsWith(`${cellKey}:`));
+            
+            if (cellEntry) {
+              const [, previousFamily] = cellEntry.split(':');
+              if (previousFamily === currentFamily && currentYear - year < 3) {
+                warnings.push({
+                  x: plant.x,
+                  y: plant.y,
+                  plantId: plant.plantId,
+                  years: [year],
+                  message: `⚠️ Same plant family planted here in ${year}. Rotate crops!`,
+                });
+              }
+            }
+          });
+        });
+        
+        return warnings;
+      },
+      
+      getRotationSuggestions: () => {
+        const { placedPlants } = get();
+        const { getPlantFamily, plantFamilyNames, plantFamilyEmoji } = require('@/lib/plants');
+        
+        // Get unique families in current garden
+        const families = new Set<string>();
+        placedPlants.forEach(plant => {
+          const family = getPlantFamily(plant.plantId);
+          if (family) families.add(family);
+        });
+        
+        // For each family, suggest what to plant next
+        const suggestions: Record<string, string[]> = {
+          solanaceae: ['fabaceae', 'cucurbitaceae', 'brassicaceae'], // Follow with legumes, gourds, cabbage
+          brassicaceae: ['fabaceae', 'solanaceae', 'cucurbitaceae'], // Follow with legumes, nightshades
+          fabaceae: ['solanaceae', 'cucurbitaceae', 'brassicaceae'], // Follow with anything (fixes nitrogen)
+          cucurbitaceae: ['fabaceae', 'brassicaceae', 'solanaceae'], // Follow with legumes or cabbage
+          allium: ['brassicaceae', 'solanaceae', 'cucurbitaceae'], // Follow with any
+          apiaceae: ['fabaceae', 'solanaceae', 'cucurbitaceae'], // Follow with legumes or nightshades
+          asteraceae: ['fabaceae', 'solanaceae', 'cucurbitaceae'], // Follow with legumes or nightshades
+        };
+        
+        const result: { family: string; emoji: string; name: string; goodFollowers: string[] }[] = [];
+        
+        families.forEach(family => {
+          const goodFollowers = suggestions[family] || [];
+          result.push({
+            family,
+            emoji: plantFamilyEmoji[family as keyof typeof plantFamilyEmoji] || '🌱',
+            name: plantFamilyNames[family as keyof typeof plantFamilyNames] || family,
+            goodFollowers,
+          });
+        });
+        
+        return result;
+      },
+      
+      clearRotationHistory: () => {
+        const { activeGardenId, gardens } = get();
+        set({ rotationHistory: {} });
+        
+        const updatedGardens = gardens.map(g => 
+          g.id === activeGardenId 
+            ? { ...g, rotationHistory: {}, updatedAt: new Date().toISOString() }
+            : g
+        );
+        set({ gardens: updatedGardens });
       },
       
       setGridSize: (size) => set({ 
@@ -366,13 +557,15 @@ export const useGardenStore = create<GardenState>()(
       
       // Export garden to JSON
       exportGarden: () => {
-        const { gardenName, gridSize, placedPlants } = get();
+        const { gardenName, gridSize, placedPlants, pestIssues, rotationHistory } = get();
         return JSON.stringify({
           name: gardenName,
           size: gridSize,
           plants: placedPlants,
+          pestIssues: pestIssues,
+          rotationHistory: rotationHistory,
           exportedAt: new Date().toISOString(),
-          version: '1.2',
+          version: '1.4',
         }, null, 2);
       },
       
@@ -385,6 +578,8 @@ export const useGardenStore = create<GardenState>()(
             gardenName: data.name || 'Imported Garden',
             gridSize: data.size || 8,
             placedPlants: data.plants,
+            pestIssues: data.pestIssues || [],
+            rotationHistory: data.rotationHistory || {},
             history: [data.plants],
             historyIndex: 0,
           });
@@ -397,11 +592,13 @@ export const useGardenStore = create<GardenState>()(
       
       // Get shareable URL with garden data encoded
       getShareUrl: () => {
-        const { gardenName, gridSize, placedPlants } = get();
+        const { gardenName, gridSize, placedPlants, pestIssues, rotationHistory } = get();
         const shareData = {
           name: gardenName,
           size: gridSize,
           plants: placedPlants,
+          pestIssues: pestIssues,
+          rotationHistory: rotationHistory,
         };
         const encoded = btoa(encodeURIComponent(JSON.stringify(shareData)));
         const baseUrl = window.location.origin + window.location.pathname;
@@ -427,6 +624,8 @@ export const useGardenStore = create<GardenState>()(
             gridSize: shareData.size || 8,
             placedPlants: shareData.plants,
             journalEntries: [],
+            pestIssues: shareData.pestIssues || [],
+            rotationHistory: shareData.rotationHistory || {},
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           };
@@ -438,6 +637,8 @@ export const useGardenStore = create<GardenState>()(
             gridSize: newGarden.gridSize,
             placedPlants: newGarden.placedPlants,
             journalEntries: [],
+            pestIssues: newGarden.pestIssues,
+            rotationHistory: newGarden.rotationHistory,
             history: [newGarden.placedPlants],
             historyIndex: 0,
           });

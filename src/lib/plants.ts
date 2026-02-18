@@ -1,3 +1,72 @@
+export type PlantFamily = 
+  | 'solanaceae' | 'brassicaceae' | 'apiaceae' | 'allium' | 'fabaceae' 
+  | 'cucurbitaceae' | 'asteraceae' | 'poaceae' | 'rosaceae' | 'lamiaceae'
+  | 'amarantaceae' | 'chenopodiaceae';
+
+export const plantFamilyNames: Record<PlantFamily, string> = {
+  solanaceae: 'Nightshades',
+  brassicaceae: 'Cabbage Family',
+  apiaceae: 'Carrot Family',
+  allium: 'Onion Family',
+  fabaceae: 'Legumes',
+  cucurbitaceae: 'Gourd Family',
+  asteraceae: 'Daisy Family',
+  poaceae: 'Grass Family',
+  rosaceae: 'Rose Family',
+  lamiaceae: 'Mint Family',
+  amarantaceae: 'Amaranth',
+  chenopodiaceae: 'Goosefoot',
+};
+
+export const plantFamilyEmoji: Record<PlantFamily, string> = {
+  solanaceae: '🍆',
+  brassicaceae: '🥦',
+  apiaceae: '🥕',
+  allium: '🧅',
+  fabaceae: '🫘',
+  cucurbitaceae: '🎃',
+  asteraceae: '🌻',
+  poaceae: '🌽',
+  rosaceae: '🍓',
+  lamiaceae: '🌿',
+  amarantaceae: '🥬',
+  chenopodiaceae: '🥗',
+};
+
+// Get plant family by plant ID
+export const getPlantFamily = (plantId: string): PlantFamily | null => {
+  const familyMap: Record<string, PlantFamily> = {
+    // Nightshades
+    tomato: 'solanaceae', pepper: 'solanaceae', eggplant: 'solanaceae', potato: 'solanaceae',
+    // Cabbage family
+    cabbage: 'brassicaceae', broccoli: 'brassicaceae', cauliflower: 'brassicaceae', 
+    kale: 'brassicaceae', brusselsprouts: 'brassicaceae', radish: 'brassicaceae',
+    // Carrot family
+    carrot: 'apiaceae', celery: 'apiaceae', parsley: 'apiaceae', dill: 'apiaceae', fennel: 'apiaceae',
+    // Onion family
+    onion: 'allium', garlic: 'allium', leek: 'allium', chives: 'allium',
+    // Legumes
+    bean: 'fabaceae', pea: 'fabaceae',
+    // Gourd family
+    cucumber: 'cucurbitaceae', zucchini: 'cucurbitaceae', squash: 'cucurbitaceae', 
+    pumpkin: 'cucurbitaceae', melon: 'cucurbitaceae', gourd: 'cucurbitaceae',
+    // Daisy family
+    lettuce: 'asteraceae', sunflower: 'asteraceae', marigold: 'asteraceae',
+    // Grass family
+    corn: 'poaceae',
+    // Rose family
+    strawberry: 'rosaceae', raspberry: 'rosaceae', blueberry: 'rosaceae', apple: 'rosaceae',
+    // Mint family
+    basil: 'lamiaceae', mint: 'lamiaceae', oregano: 'lamiaceae', thyme: 'lamiaceae',
+    rosemary: 'lamiaceae', sage: 'lamiaceae', lavender: 'lamiaceae', cilantro: 'lamiaceae',
+    // Amaranth
+    spinach: 'amarantaceae', beet: 'amarantaceae',
+    // Goosefoot
+    chard: 'chenopodiaceae',
+  };
+  return familyMap[plantId] || null;
+};
+
 export interface Plant {
   id: string;
   name: string;
