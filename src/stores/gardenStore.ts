@@ -56,6 +56,16 @@ export interface Notification {
   createdAt: string;
 }
 
+export interface SeedEntry {
+  id: string;
+  plantId: string;
+  quantity: number;
+  purchasedDate: string;
+  expirationDate: string;
+  notes?: string;
+  source?: string;
+}
+
 export interface Garden {
   id: string;
   name: string;
@@ -91,6 +101,12 @@ interface GardenState {
   reminders: Reminder[];
   notifications: Notification[];
   unreadNotificationCount: number;
+  
+  // Seed Vault
+  seedVault: SeedEntry[];
+  addSeedEntry: (entry: SeedEntry) => void;
+  updateSeedEntry: (id: string, entry: SeedEntry) => void;
+  removeSeedEntry: (id: string) => void;
   
   // USDA Zone for frost dates and weather
   zone: number;
@@ -160,6 +176,11 @@ interface GardenState {
   addNotification: (message: string, type: Notification['type'], plantId?: string) => void;
   markNotificationRead: (id: string) => void;
   clearNotifications: () => void;
+  
+  // Seed Vault
+  addSeedEntry: (entry: SeedEntry) => void;
+  updateSeedEntry: (id: string, entry: SeedEntry) => void;
+  removeSeedEntry: (id: string) => void;
 }
 
 export const useGardenStore = create<GardenState>()(
@@ -195,6 +216,7 @@ export const useGardenStore = create<GardenState>()(
       reminders: [],
       notifications: [],
       unreadNotificationCount: 0,
+      seedVault: [],
       zone: 6, // Default USDA zone
       soilType: null, // No soil type selected yet
       history: [],
@@ -822,6 +844,25 @@ export const useGardenStore = create<GardenState>()(
       clearNotifications: () => {
         set({ notifications: [], unreadNotificationCount: 0 });
       },
+      
+      // Seed Vault actions
+      addSeedEntry: (entry) => {
+        set((state) => ({
+          seedVault: [...state.seedVault, entry],
+        }));
+      },
+      
+      updateSeedEntry: (id, entry) => {
+        set((state) => ({
+          seedVault: state.seedVault.map(s => s.id === id ? entry : s),
+        }));
+      },
+      
+      removeSeedEntry: (id) => {
+        set((state) => ({
+          seedVault: state.seedVault.filter(s => s.id !== id),
+        }));
+      },
     }),
     {
       name: 'gardengrid-storage',
@@ -833,6 +874,7 @@ export const useGardenStore = create<GardenState>()(
         soilType: state.soilType,
         notifications: state.notifications,
         reminders: state.reminders,
+        seedVault: state.seedVault,
       }),
     }
   )

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-export type TabId = 'garden' | 'calendar' | 'stats' | 'weather' | 'journal' | 'pests' | 'rotation' | 'assistant' | 'settings';
+export type TabId = 'garden' | 'calendar' | 'stats' | 'weather' | 'journal' | 'pests' | 'rotation' | 'assistant' | 'seeds' | 'settings';
 
 interface NavItem {
   id: TabId;
@@ -15,10 +15,12 @@ const navItems: NavItem[] = [
     id: 'garden', 
     label: 'Garden',
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M12 22V8" />
-        <path d="M5 12H2a10 10 0 0 0 20 0h-3" />
-        <path d="M5 12a5 5 0 0 0 0 10h14a5 5 0 0 0 0-10" />
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <rect x="1" y="1" width="9" height="9" rx="2" fill="#22c55e" fillOpacity="0.2" stroke="#22c55e" strokeWidth="1.5"/>
+        <rect x="12" y="1" width="11" height="9" rx="2" fill="#22c55e" fillOpacity="0.2" stroke="#22c55e" strokeWidth="1.5"/>
+        <rect x="1" y="12" width="9" height="11" rx="2" fill="#22c55e" fillOpacity="0.2" stroke="#22c55e" strokeWidth="1.5"/>
+        <rect x="12" y="12" width="11" height="11" rx="2" fill="#16a34a" stroke="#16a34a" strokeWidth="1.5"/>
+        <path d="M18 18L21 21M18 21L21 18" stroke="#16a34a" strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
     )
   },
