@@ -209,15 +209,24 @@ function DragOverlayPlant({ plant }: { plant: Plant }) {
 // SVG overlay for relationship lines
 function RelationshipLines({ 
   relationships, 
-  cellSize 
+  cellSize,
+  gridSize
 }: { 
   relationships: { type: 'companion' | 'antagonist' | 'spacing'; fromX: number; fromY: number; toX: number; toY: number }[];
   cellSize: number;
+  gridSize: number;
 }) {
   if (relationships.length === 0) return null;
   
+  const size = gridSize * cellSize;
+  
   return (
-    <svg className="absolute inset-0 pointer-events-none" style={{ padding: '4px' }}>
+    <svg 
+      className="absolute inset-0 pointer-events-none" 
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+    >
       {relationships.map((r, i) => {
         const x1 = r.fromX * cellSize + cellSize / 2;
         const y1 = r.fromY * cellSize + cellSize / 2;
@@ -276,14 +285,17 @@ function useGardenRelationships(placedPlants: PlacedPlant[]) {
         
         if (!plant1 || !plant2) continue;
         
-        // Calculate distance in cells (1 cell = 1 foot = 12 inches)
+        // Calculate distance in cells (only show lines for adjacent plants)
         const dx = Math.abs(placedPlants[i].x - placedPlants[j].x);
         const dy = Math.abs(placedPlants[i].y - placedPlants[j].y);
-        const distanceInFeet = Math.sqrt(dx * dx + dy * dy);
-        const distanceInInches = distanceInFeet * 12;
+        const distance = dx + dy; // Manhattan distance (adjacent = 1)
         
-        // Check if too close based on combined spacing requirements
+        // Only draw lines between adjacent plants (distance of 1)
+        if (distance !== 1) continue;
+        
+        // Check if too close based on combined spacing requirements (convert to inches: 1 cell = 12 inches)
         const minDistance = (plant1.spacing + plant2.spacing) / 2;
+        const distanceInInches = distance * 12;
         if (distanceInInches < minDistance) {
           relationships.push({
             type: 'spacing',
@@ -904,7 +916,7 @@ export default function Home() {
                   >
                     {gridCells}
                   </div>
-                  <RelationshipLines relationships={relationships} cellSize={isMobile ? (gridSize === 4 ? 40 : gridSize === 8 ? 35 : 30) : gridSize === 4 ? 120 : gridSize === 8 ? 65 : 45} />
+                  <RelationshipLines relationships={relationships} cellSize={isMobile ? (gridSize === 4 ? 40 : gridSize === 8 ? 35 : 30) : gridSize === 4 ? 120 : gridSize === 8 ? 65 : 45} gridSize={gridSize} />
                 </div>
                 
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
