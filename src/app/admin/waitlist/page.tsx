@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-export default function AdminWaitlistPage() {
+function AdminWaitlistContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [emails, setEmails] = useState<string[]>([]);
@@ -14,7 +14,12 @@ export default function AdminWaitlistPage() {
   const key = searchParams.get('key');
 
   useEffect(() => {
-    // Check key server-side
+    if (!key) {
+      setError('Missing access key');
+      setLoading(false);
+      return;
+    }
+
     fetch(`/api/admin/verify?key=${key}`)
       .then(res => {
         if (!res.ok) {
@@ -22,7 +27,6 @@ export default function AdminWaitlistPage() {
           setLoading(false);
           return;
         }
-        // Key is valid, load data
         const waitlist = JSON.parse(localStorage.getItem('gardengrid_waitlist') || '[]');
         setEmails(waitlist);
         setLoading(false);
@@ -112,5 +116,13 @@ export default function AdminWaitlistPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AdminWaitlistPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 p-8">Loading...</div>}>
+      <AdminWaitlistContent />
+    </Suspense>
   );
 }
