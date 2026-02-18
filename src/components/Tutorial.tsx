@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface TutorialStep {
   target: string;
@@ -22,32 +22,27 @@ const tutorialSteps: TutorialStep[] = [
   {
     target: 'plant-picker',
     title: "Choose Your Plants",
-    content: "Browse 60+ vegetables, herbs & fruits. Drag to grid or tap cell on mobile.",
-  },
-  {
-    target: 'stage-toggle',
-    title: "Track Growth Stages",
-    content: "Click a plant to cycle: Seedling 🌱 → Growing 🌿 → Ready ✨. Track when to harvest!",
+    content: "Browse 60+ vegetables, herbs & fruits. Tap a cell to place plants.",
   },
   {
     target: 'harmony-score',
     title: "Harmony Score",
-    content: "This shows how well your plants get along. 100% = perfect companions! Green = good, Red = conflicts.",
+    content: "This shows how well your plants get along. Higher = better companions!",
   },
   {
     target: 'undo-redo',
     title: "Undo & Clear",
-    content: "Made a mistake? Use Undo/Redo. The trash icon clears your whole garden.",
+    content: "Made a mistake? Use Undo/Redo. The trash icon clears your garden.",
   },
   {
     target: 'nav-tabs',
     title: "All Features",
-    content: "Explore more: Calendar (planting schedule), Stats (analytics), Journal (notes), AI Assistant (help), & more!",
+    content: "Explore more: Calendar, Stats, Journal, AI Assistant, Pests, and more!",
   },
   {
     target: 'dark-mode',
     title: "Dark Mode",
-    content: "Toggle between light and dark themes. Your preference is saved automatically.",
+    content: "Toggle between light and dark themes.",
   },
   {
     target: 'tutorial-end',
@@ -63,158 +58,136 @@ interface TutorialProps {
 export default function Tutorial({ onComplete }: TutorialProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
-  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-  const [highlightStyle, setHighlightStyle] = useState<React.CSSProperties>({});
+  const [isReady, setIsReady] = useState(false);
   const step = tutorialSteps[currentStep];
-  const tooltipRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Check if user has seen tutorial
     const seen = localStorage.getItem('gardengrid_tutorial_seen');
     if (!seen) {
-      setIsVisible(true);
       // Delay to ensure page is fully rendered
-      setTimeout(() => updatePosition(), 100);
+      const timer = setTimeout(() => {
+        setIsVisible(true);
+        setIsReady(true);
+      }, 500);
+      return () => clearTimeout(timer);
     }
   }, []);
 
-  useEffect(() => {
-    if (isVisible) {
-      updatePosition();
-    }
-  }, [currentStep, isVisible]);
-
-  const updatePosition = () => {
-    if (step.target === 'tutorial-start' || step.target === 'tutorial-end') {
-      // Center for intro/end slides
-      setHighlightStyle({ display: 'none' });
-      setTooltipPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
-      return;
-    }
-
-    const element = document.querySelector(`#${step.target}`);
-    if (element) {
-      const rect = element.getBoundingClientRect();
-      const scrollX = window.scrollX;
-      const scrollY = window.scrollY;
-
-      setHighlightStyle({
-        position: 'absolute',
-        left: rect.left + scrollX - 4,
-        top: rect.top + scrollY - 4,
-        width: rect.width + 8,
-        height: rect.height + 8,
-        borderRadius: '8px',
-        boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.6)',
-        zIndex: 9998,
-        transition: 'all 0.3s ease',
-      });
-
-      // Position tooltip near the element
-      const tooltipWidth = 320;
-      let x = rect.left + scrollX + rect.width / 2 - tooltipWidth / 2;
-      let y = rect.bottom + scrollY + 16;
-
-      // Keep within viewport
-      if (x < 16) x = 16;
-      if (x + tooltipWidth > window.innerWidth - 16) x = window.innerWidth - tooltipWidth - 16;
-      if (y + 200 > window.innerHeight + scrollY) {
-        y = rect.top + scrollY - 16 - 200;
-      }
-
-      setTooltipPosition({ x: x + tooltipWidth / 2, y });
-    }
-  };
-
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentStep < tutorialSteps.length - 1) {
-      setCurrentStep(currentStep + 1);
+      setCurrentStep(prev => prev + 1);
     } else {
       localStorage.setItem('gardengrid_tutorial_seen', 'true');
       setIsVisible(false);
       onComplete();
     }
-  };
+  }, [currentStep, onComplete]);
 
-  const handleSkip = () => {
+  const handleSkip = useCallback(() => {
     localStorage.setItem('gardengrid_tutorial_seen', 'true');
     setIsVisible(false);
     onComplete();
-  };
+  }, [onComplete]);
 
-  if (!isVisible) return null;
+  // Keyboard navigation
+  useEffect(() => {
+    if (!isVisible) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' || e.key === 'Enter') {
+        handleNext();
+      } else if (e.key === 'Escape') {
+        handleSkip();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isVisible, handleNext, handleSkip]);
+
+  if (!isVisible || !isReady) return null;
+
+  const isCenterStep = step.target === 'tutorial-start' || step.target === 'tutorial-end';
 
   return (
-    <>
-      {/* Highlight overlay */}
-      <div style={highlightStyle} />
-      
-      {/* Tooltip */}
+    <div 
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style={{
+        background: 'rgba(0, 0, 0, 0.5)',
+        backdropFilter: 'blur(4px)',
+      }}
+    >
+      {/* Modal Card */}
       <div 
-        ref={tooltipRef}
-        className="fixed z-50 transition-all duration-300"
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 relative z-[10000]"
         style={{
-          left: step.target === 'tutorial-start' || step.target === 'tutorial-end' 
-            ? '50%' 
-            : tooltipPosition.x,
-          top: step.target === 'tutorial-start' || step.target === 'tutorial-end'
-            ? '50%'
-            : tooltipPosition.y,
-          transform: step.target === 'tutorial-start' || step.target === 'tutorial-end'
-            ? 'translate(-50%, -50%)'
-            : 'translateX(-50%)',
+          animation: 'tutorialPopIn 0.3s ease-out',
         }}
       >
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-80 p-5">
-          {/* Progress */}
-          <div className="flex justify-center gap-1.5 mb-4">
-            {tutorialSteps.map((_, i) => (
-              <div
-                key={i}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  i === currentStep ? 'bg-green-500 w-4' : i < currentStep ? 'bg-green-300' : 'bg-gray-300 dark:bg-gray-600'
-                }`}
-              />
-            ))}
-          </div>
-          
-          {/* Content */}
-          <div className="text-center mb-4">
-            <div className="text-3xl mb-2">
-              {currentStep === 0 ? '👋' : currentStep === tutorialSteps.length - 1 ? '🎉' : '✨'}
-            </div>
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2">
-              {step.title}
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-              {step.content}
-            </p>
-          </div>
-          
-          {/* Actions */}
-          <div className="flex gap-2">
-            <button
-              onClick={handleSkip}
-              className="flex-1 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 font-medium text-sm"
-            >
-              Skip
-            </button>
-            <button
-              onClick={handleNext}
-              className="flex-1 py-2.5 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl text-sm"
-            >
-              {currentStep === tutorialSteps.length - 1 ? 'Start Gardening!' : 'Next'}
-            </button>
-          </div>
+        <style jsx>{`
+          @keyframes tutorialPopIn {
+            from {
+              opacity: 0;
+              transform: scale(0.95);
+            }
+            to {
+              opacity: 1;
+              transform: scale(1);
+            }
+          }
+        `}</style>
+        
+        {/* Progress dots */}
+        <div className="flex justify-center gap-1.5 mb-4">
+          {tutorialSteps.map((_, i) => (
+            <div
+              key={i}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                i === currentStep 
+                  ? 'bg-green-500 w-6' 
+                  : i < currentStep 
+                    ? 'bg-green-300 w-1.5' 
+                    : 'bg-gray-200 dark:bg-gray-600 w-1.5'
+              }`}
+            />
+          ))}
         </div>
         
-        {/* Arrow pointing to element */}
-        {step.target !== 'tutorial-start' && step.target !== 'tutorial-end' && (
-          <div 
-            className="absolute left-1/2 -translate-x-1/2 -top-2 w-4 h-4 bg-white dark:bg-gray-800 rotate-45"
-            style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }}
-          />
-        )}
+        {/* Content */}
+        <div className="text-center mb-5">
+          <div className="text-3xl mb-3">
+            {currentStep === 0 ? '👋' : currentStep === tutorialSteps.length - 1 ? '🎉' : '🌿'}
+          </div>
+          <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2">
+            {step.title}
+          </h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+            {step.content}
+          </p>
+        </div>
+        
+        {/* Actions */}
+        <div className="flex gap-2">
+          <button
+            onClick={handleSkip}
+            className="flex-1 py-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-medium text-sm rounded-xl transition-colors"
+          >
+            Skip
+          </button>
+          <button
+            onClick={handleNext}
+            className="flex-1 py-2.5 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl transition-colors text-sm"
+          >
+            {currentStep === tutorialSteps.length - 1 ? 'Get Started!' : 'Next'}
+          </button>
+        </div>
+        
+        {/* Step counter */}
+        <div className="text-center mt-3 text-xs text-gray-400">
+          {currentStep + 1} of {tutorialSteps.length}
+        </div>
       </div>
-    </>
+    </div>
   );
 }
