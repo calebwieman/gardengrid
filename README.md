@@ -52,6 +52,7 @@ src/
 - [x] Iteration 17: Seed Shopping List - generates shopping list based on placed plants
 - [x] Iteration 18: Monthly Garden Task Checklist - zone-based personalized monthly tasks
 - [x] Iteration 19: Garden Analytics Dashboard - harvest timeline, category breakdown, growth progress, sun needs
+- [x] Iteration 20: Succession Planting Scheduler - continuous harvest planning with zone-based planting dates
 
 ## Features (Coming Soon)
 

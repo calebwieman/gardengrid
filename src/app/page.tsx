@@ -22,6 +22,7 @@ import CropRotationPlanner from '@/components/CropRotationPlanner';
 import GardenShare from '@/components/GardenShare';
 import GardenTasks from '@/components/GardenTasks';
 import GardenAnalytics from '@/components/GardenAnalytics';
+import SuccessionPlanting from '@/components/SuccessionPlanting';
 
 function DraggablePlant({ plant }: { plant: Plant }) {
   const { selectedPlantId, setSelectedPlant } = useGardenStore();
@@ -750,6 +751,9 @@ export default function Home() {
               
               {/* Planting Calendar */}
               <PlantingCalendar placedPlants={placedPlants} />
+              
+              {/* Succession Planting Scheduler */}
+              <SuccessionPlanting />
               
               {/* Garden Stats */}
               <GardenStats placedPlants={placedPlants} />

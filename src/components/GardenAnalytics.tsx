@@ -58,7 +58,7 @@ export default function GardenAnalytics({ placedPlants }: GardenAnalyticsProps) 
     const daysToFirstHarvest = plantData
       .filter(p => p.plantedAt && p.stage !== 'ready')
       .map(p => {
-        const planted = new Date(p.plantedAt);
+        const planted = new Date(p.plantedAt!);
         const harvest = new Date(planted);
         harvest.setDate(harvest.getDate() + p.data.daysToMaturity);
         return Math.ceil((harvest.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -90,7 +90,7 @@ export default function GardenAnalytics({ placedPlants }: GardenAnalyticsProps) 
     const progressPercent = plantsWithProgress.length > 0 
       ? Math.round(
           plantsWithProgress.reduce((sum, p) => {
-            const planted = new Date(p.plantedAt);
+            const planted = new Date(p.plantedAt!);
             const harvest = new Date(planted);
             harvest.setDate(harvest.getDate() + p.data.daysToMaturity);
             const elapsed = today.getTime() - planted.getTime();
