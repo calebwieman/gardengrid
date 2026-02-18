@@ -48,6 +48,7 @@ src/
 - [x] Iteration 13: Garden journal - add notes, observations, harvests, problems
 - [x] Iteration 14: Export garden as image (PNG download)
 - [x] Iteration 15: Weather widget + frost date alerts + planting advice
+- [x] Iteration 16: Garden Care - soil type selection, watering schedule, pest reference
 
 ## Features (Coming Soon)
 

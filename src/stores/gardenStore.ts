@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Plant } from '@/lib/plants';
+import { SoilType } from '@/lib/soil';
 
 export type PlantStage = 'seedling' | 'growing' | 'ready';
 
@@ -48,6 +49,10 @@ interface GardenState {
   
   // USDA Zone for frost dates and weather
   zone: number;
+  
+  // Soil type for recommendations
+  soilType: SoilType | null;
+  setSoilType: (type: SoilType | null) => void;
   
   // Undo/Redo
   history: PlacedPlant[][];
@@ -112,6 +117,7 @@ export const useGardenStore = create<GardenState>()(
       mobileMenuOpen: false,
       journalEntries: [],
       zone: 6, // Default USDA zone
+      soilType: null, // No soil type selected yet
       history: [],
       historyIndex: -1,
       
@@ -228,6 +234,7 @@ export const useGardenStore = create<GardenState>()(
       setHasVisited: (visited: boolean) => set({ hasVisited: visited }),
       setMobileMenuOpen: (open: boolean) => set({ mobileMenuOpen: open }),
       setZone: (zone: number) => set({ zone }),
+      setSoilType: (type: SoilType | null) => set({ soilType: type }),
       
       // Journal
       addJournalEntry: (text, type) => {
@@ -449,6 +456,7 @@ export const useGardenStore = create<GardenState>()(
         activeGardenId: state.activeGardenId,
         hasVisited: state.hasVisited,
         zone: state.zone,
+        soilType: state.soilType,
       }),
     }
   )
