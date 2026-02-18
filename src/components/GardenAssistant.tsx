@@ -382,7 +382,7 @@ Plants in garden: ${gardenPlants.length > 0 ? gardenPlants.map(p => p!.plant.nam
           <button
             key={q.id}
             onClick={() => handleQuickQuestion(q.text)}
-            className="flex-shrink-0 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-green-100 dark:hover:bg-green-900 text-xs rounded-full transition-colors flex items-center gap-1"
+            className="flex-shrink-0 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-green-100 dark:hover:bg-green-900 text-gray-700 dark:text-gray-200 text-xs rounded-full transition-colors flex items-center gap-1"
           >
             <span>{q.icon}</span>
             <span>{q.text}</span>
