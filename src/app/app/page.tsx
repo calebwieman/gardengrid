@@ -737,7 +737,7 @@ export default function Home() {
           
           {activeTab === 'weather' && (
             <div className="space-y-4">
-              <WeatherWidget zone={zone} />
+              <WeatherWidget defaultZone={zone} />
             </div>
           )}
           

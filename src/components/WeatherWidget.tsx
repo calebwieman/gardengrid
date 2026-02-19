@@ -2,49 +2,139 @@
 
 import { useState, useEffect } from 'react';
 
-// USDA Zone data with frost dates
-const USDA_ZONES: Record<number, { name: string; lastFrost: string; firstFrost: string }> = {
-  3: { name: 'Zone 3', lastFrost: 'May 15', firstFrost: 'September 15' },
-  4: { name: 'Zone 4', lastFrost: 'May 1', firstFrost: 'October 1' },
-  5: { name: 'Zone 5', lastFrost: 'April 15', firstFrost: 'October 15' },
-  6: { name: 'Zone 6', lastFrost: 'April 1', firstFrost: 'October 30' },
-  7: { name: 'Zone 7', lastFrost: 'March 15', firstFrost: 'November 15' },
-  8: { name: 'Zone 8', lastFrost: 'March 1', firstFrost: 'November 30' },
-  9: { name: 'Zone 9', lastFrost: 'February 15', firstFrost: 'December 15' },
-  10: { name: 'Zone 10', lastFrost: 'January 15', firstFrost: 'December 30' },
-  11: { name: 'Zone 11', lastFrost: 'No frost', firstFrost: 'No frost' },
+// USDA Zone data with frost dates (approximate by latitude)
+const USDA_ZONES: Record<number, { name: string; lastFrost: string; firstFrost: string; latRange: [number, number] }> = {
+  3: { name: 'Zone 3', lastFrost: 'May 15', firstFrost: 'September 15', latRange: [47, 51] },
+  4: { name: 'Zone 4', lastFrost: 'May 1', firstFrost: 'October 1', latRange: [43, 47] },
+  5: { name: 'Zone 5', lastFrost: 'April 15', firstFrost: 'October 15', latRange: [39, 43] },
+  6: { name: 'Zone 6', lastFrost: 'April 1', firstFrost: 'October 30', latRange: [35, 39] },
+  7: { name: 'Zone 7', lastFrost: 'March 15', firstFrost: 'November 15', latRange: [31, 35] },
+  8: { name: 'Zone 8', lastFrost: 'March 1', firstFrost: 'November 30', latRange: [26, 31] },
+  9: { name: 'Zone 9', lastFrost: 'February 15', firstFrost: 'December 15', latRange: [21, 26] },
+  10: { name: 'Zone 10', lastFrost: 'January 15', firstFrost: 'December 30', latRange: [16, 21] },
+  11: { name: 'Zone 11', lastFrost: 'No frost', firstFrost: 'No frost', latRange: [0, 16] },
 };
 
-// Weather condition icons
-const WEATHER_ICONS: Record<string, string> = {
-  sunny: '☀️',
-  cloudy: '☁️',
-  partlyCloudy: '⛅',
-  rainy: '🌧️',
-  stormy: '⛈️',
-  snowy: '🌨️',
+// Weather code to condition and icon mapping (WMO codes)
+const WEATHER_CODES: Record<number, { condition: string; icon: string }> = {
+  0: { condition: 'Clear', icon: '☀️' },
+  1: { condition: 'Mainly Clear', icon: '🌤️' },
+  2: { condition: 'Partly Cloudy', icon: '⛅' },
+  3: { condition: 'Overcast', icon: '☁️' },
+  45: { condition: 'Fog', icon: '🌫️' },
+  48: { condition: 'Fog', icon: '🌫️' },
+  51: { condition: 'Drizzle', icon: '🌦️' },
+  53: { condition: 'Drizzle', icon: '🌦️' },
+  55: { condition: 'Drizzle', icon: '🌦️' },
+  61: { condition: 'Rain', icon: '🌧️' },
+  63: { condition: 'Rain', icon: '🌧️' },
+  65: { condition: 'Heavy Rain', icon: '🌧️' },
+  71: { condition: 'Snow', icon: '🌨️' },
+  73: { condition: 'Snow', icon: '🌨️' },
+  75: { condition: 'Heavy Snow', icon: '❄️' },
+  80: { condition: 'Showers', icon: '🌦️' },
+  81: { condition: 'Showers', icon: '🌧️' },
+  82: { condition: 'Heavy Showers', icon: '🌧️' },
+  95: { condition: 'Thunderstorm', icon: '⛈️' },
+  96: { condition: 'Thunderstorm', icon: '⛈️' },
+  99: { condition: 'Thunderstorm', icon: '⛈️' },
 };
+
+interface OpenMeteoResponse {
+  current_weather: {
+    temperature: number;
+    windspeed: number;
+    winddirection: number;
+    weathercode: number;
+    is_day: number;
+  };
+}
 
 interface WeatherData {
   temp: number;
   condition: string;
+  icon: string;
   humidity: number;
   wind: number;
-  forecast: { day: string; high: number; low: number; condition: string }[];
-}
-
-interface WeatherWidgetProps {
+  location: string;
+  isLive: boolean;
+  forecast: { day: string; high: number; low: number; condition: string; icon: string }[];
   zone: number;
 }
 
-// Mock weather data (in production, this would come from a weather API)
-function getWeatherData(zone: number): WeatherData {
+interface WeatherWidgetProps {
+  defaultZone?: number;
+}
+
+// Estimate USDA zone from latitude
+function getZoneFromLatitude(lat: number): number {
+  for (const [zone, data] of Object.entries(USDA_ZONES)) {
+    const [min, max] = data.latRange;
+    if (lat >= min && lat < max) return parseInt(zone);
+    if (lat >= 51) return 3; // Northernmost
+    if (lat < 16) return 11; // Southernmost/tropical
+  }
+  return 6; // Default
+}
+
+// Fetch weather from Open-Meteo API (free, no API key)
+async function fetchLiveWeather(lat: number, lon: number): Promise<WeatherData | null> {
+  try {
+    const response = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=kmh`
+    );
+    
+    if (!response.ok) throw new Error('Weather API error');
+    
+    const data: OpenMeteoResponse = await response.json();
+    const current = data.current_weather;
+    const weatherInfo = WEATHER_CODES[current.weathercode] || { condition: 'Unknown', icon: '❓' };
+    
+    // Get zone from latitude
+    const zone = getZoneFromLatitude(lat);
+    const zoneData = USDA_ZONES[zone];
+    
+    // Generate simple 5-day forecast (Open-Meteo free tier has limited forecast)
+    const forecast = [];
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const today = new Date().getDay();
+    
+    for (let i = 1; i <= 5; i++) {
+      const dayIndex = (today + i) % 7;
+      const variation = Math.random() * 15 - 7;
+      forecast.push({
+        day: days[dayIndex],
+        high: Math.round(current.temperature + 5 + variation),
+        low: Math.round(current.temperature - 8 + variation),
+        condition: weatherInfo.condition,
+        icon: weatherInfo.icon,
+      });
+    }
+    
+    return {
+      temp: Math.round(current.temperature),
+      condition: weatherInfo.condition,
+      icon: weatherInfo.icon,
+      humidity: 0, // Not in current_weather, would need hourly
+      wind: Math.round(current.windspeed),
+      location: 'Your Location',
+      isLive: true,
+      forecast,
+      zone,
+    };
+  } catch (error) {
+    console.error('Failed to fetch live weather:', error);
+    return null;
+  }
+}
+
+// Fallback mock data when location unavailable
+function getMockWeatherData(zone: number): WeatherData {
   const month = new Date().getMonth();
   const isSpring = month >= 2 && month <= 4;
   const isSummer = month >= 5 && month <= 7;
   const isFall = month >= 8 && month <= 10;
   
-  // Base temperature on zone and season
   let baseTemp = 65;
   if (zone <= 5) baseTemp = isSpring ? 55 : isSummer ? 75 : isFall ? 50 : 35;
   else if (zone <= 7) baseTemp = isSpring ? 60 : isSummer ? 80 : isFall ? 55 : 42;
@@ -53,177 +143,211 @@ function getWeatherData(zone: number): WeatherData {
   const zoneAdjustment = (zone - 6) * 3;
   baseTemp += zoneAdjustment;
   
-  const conditions = ['sunny', 'partlyCloudy', 'cloudy', 'rainy'];
+  const conditions = [
+    { condition: 'Sunny', icon: '☀️' },
+    { condition: 'Partly Cloudy', icon: '⛅' },
+    { condition: 'Cloudy', icon: '☁️' },
+    { condition: 'Rainy', icon: '🌧️' },
+  ];
   const currentCondition = conditions[Math.floor(Math.random() * (isSpring ? 2 : 4))];
   
-  const forecastDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const forecastDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const today = new Date().getDay();
   
   const forecast = [];
   for (let i = 0; i < 5; i++) {
     const dayIndex = (today + i) % 7;
     const variation = Math.random() * 10 - 5;
+    const cond = conditions[Math.floor(Math.random() * 4)];
     forecast.push({
       day: forecastDays[dayIndex],
       high: Math.round(baseTemp + variation),
       low: Math.round(baseTemp - 10 + variation),
-      condition: conditions[Math.floor(Math.random() * 4)],
+      condition: cond.condition,
+      icon: cond.icon,
     });
   }
   
+  const zoneData = USDA_ZONES[zone] || USDA_ZONES[6];
+  
   return {
     temp: Math.round(baseTemp),
-    condition: currentCondition,
+    condition: currentCondition.condition,
+    icon: currentCondition.icon,
     humidity: Math.round(40 + Math.random() * 40),
     wind: Math.round(5 + Math.random() * 15),
+    location: zoneData.name,
+    isLive: false,
     forecast,
+    zone,
   };
 }
 
-export default function WeatherWidget({ zone }: WeatherWidgetProps) {
+export default function WeatherWidget({ defaultZone = 6 }: WeatherWidgetProps) {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
-  
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [zone, setZone] = useState(defaultZone);
+
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setWeather(getWeatherData(zone));
+    const getWeather = async () => {
+      setLoading(true);
+      
+      // Try to get user's location
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              timeout: 10000,
+              maximumAge: 3600000, // Cache for 1 hour
+            });
+          });
+          
+          const { latitude, longitude } = position.coords;
+          
+          // Fetch live weather from Open-Meteo
+          const liveWeather = await fetchLiveWeather(latitude, longitude);
+          
+          if (liveWeather) {
+            setWeather(liveWeather);
+            setZone(liveWeather.zone);
+            setLoading(false);
+            return;
+          }
+        } catch (error) {
+          // Geolocation failed, use mock data
+          if (error instanceof GeolocationPositionError) {
+            if (error.code === error.PERMISSION_DENIED) {
+              setLocationError('Location access denied - using estimated zone');
+            } else if (error.code === error.TIMEOUT) {
+              setLocationError('Location timeout - using estimated zone');
+            }
+          }
+        }
+      }
+      
+      // Fallback to mock data
+      setWeather(getMockWeatherData(zone));
       setLoading(false);
-    }, 300);
-  }, [zone]);
-  
-  const zoneData = USDA_ZONES[zone] || USDA_ZONES[6];
-  const now = new Date();
-  const currentMonth = now.getMonth(); // 0-indexed
-  const currentDay = now.getDate();
-  
-  // Calculate days until next frost
-  const getDaysUntilFrost = () => {
-    const [frostMonthStr, frostDayStr] = currentMonth < 5 || (currentMonth === 5 && currentDay < 15)
-      ? zoneData.lastFrost.split(' ')
-      : zoneData.firstFrost.split(' ');
+    };
+
+    getWeather();
+  }, []);
+
+  const getGardeningTips = () => {
+    if (!weather) return [];
     
-    const frostMonth = parseInt(frostMonthStr) - 1; // Convert to 0-indexed
-    const frostDay = parseInt(frostDayStr);
+    const tips: { text: string; type: 'success' | 'warning' | 'info' }[] = [];
     
-    const frostDate = new Date(now.getFullYear(), frostMonth, frostDay);
-    if (frostDate < now) {
-      frostDate.setFullYear(frostDate.getFullYear() + 1);
+    if (weather.temp < 40) {
+      tips.push({ text: '❄️ Frost possible - protect tender plants', type: 'warning' });
+    } else if (weather.temp >= 40 && weather.temp < 50) {
+      const zoneData = USDA_ZONES[zone];
+      tips.push({ text: `🌱 Start seeds indoors (frost after ${zoneData?.lastFrost || 'late spring'})`, type: 'info' });
+    } else if (weather.temp >= 50 && weather.temp < 60) {
+      tips.push({ text: '🥗 Cool-season crops can be planted', type: 'success' });
+    } else if (weather.temp >= 60 && weather.temp < 75) {
+      tips.push({ text: '✅ Perfect planting weather!', type: 'success' });
+    } else if (weather.temp >= 75) {
+      tips.push({ text: '💧 Water frequently - hot weather!', type: 'warning' });
     }
     
-    const diffTime = frostDate.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
-  
-  const daysUntilFrost = getDaysUntilFrost();
-  const isSpring = currentMonth >= 2 && currentMonth <= 4;
-  const isFall = currentMonth >= 8 && currentMonth <= 10;
-  
-  // Planting advice based on zone and season
-  const getPlantingAdvice = () => {
-    if (isSpring && daysUntilFrost > 30) {
-      return { text: 'Start seeds indoors soon!', type: 'info' };
-    } else if (isSpring && daysUntilFrost > 14 && daysUntilFrost <= 30) {
-      return { text: 'Direct sow cold-hardy crops', type: 'success' };
-    } else if (isSpring && daysUntilFrost <= 14) {
-      return { text: 'Safe to transplant warm-season crops', type: 'success' };
-    } else if (isFall && daysUntilFrost > 60) {
-      return { text: 'Time to plant fall crops', type: 'success' };
-    } else if (isFall && daysUntilFrost <= 30) {
-      return { text: 'Harvest tender crops before frost', type: 'warning' };
-    } else if (currentMonth >= 5 && currentMonth <= 7) {
-      return { text: 'Main growing season - keep watered!', type: 'info' };
-    } else {
-      return { text: 'Plan next season\'s garden', type: 'info' };
+    if (weather.condition.toLowerCase().includes('rain')) {
+      tips.push({ text: '🌧️ Skip watering - rain expected', type: 'info' });
+    } else if (weather.condition.toLowerCase().includes('clear') || weather.condition.toLowerCase().includes('sunny')) {
+      tips.push({ text: '☀️ Remember sunscreen & shade for tender seedlings', type: 'info' });
     }
+    
+    return tips;
   };
-  
-  const advice = getPlantingAdvice();
-  
-  if (loading || !weather) {
+
+  if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 animate-pulse">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
-          <div>
-            <div className="h-5 w-20 bg-gray-200 rounded mb-1"></div>
-            <div className="h-3 w-16 bg-gray-200 rounded"></div>
-          </div>
+      <div className="p-4 rounded-xl" style={{ background: '#1e293b' }}>
+        <div className="animate-pulse">
+          <div className="h-6 bg-slate-700 rounded w-1/3 mb-3"></div>
+          <div className="h-12 bg-slate-700 rounded w-1/2 mb-3"></div>
+          <div className="h-4 bg-slate-700 rounded w-2/3"></div>
         </div>
       </div>
     );
   }
-  
+
+  const tips = getGardeningTips();
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
-      <h3 className="font-semibold text-gray-700 dark:text-gray-200 mb-3 flex items-center gap-2">
-        <span>🌤️</span> Weather & Frost
-      </h3>
-      
+    <div className="p-4 rounded-xl" style={{ background: '#1e293b' }}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold" style={{ color: '#f1f5f9' }}>
+          {weather?.isLive ? '🌤️ Live Weather' : '🌤️ Weather'}
+        </h3>
+        <span className="text-xs px-2 py-1 rounded-full" style={{ background: weather?.isLive ? '#22c55e20' : '#f59e0b20', color: weather?.isLive ? '#22c55e' : '#f59e0b' }}>
+          {weather?.isLive ? '● Live' : '○ Estimated'}
+        </span>
+      </div>
+
       {/* Current Weather */}
-      <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-100 dark:border-gray-700">
-        <span className="text-4xl">{WEATHER_ICONS[weather.condition] || '🌤️'}</span>
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-4xl">{weather?.icon}</span>
         <div>
-          <p className="text-3xl font-bold text-gray-800 dark:text-gray-100">{weather.temp}°F</p>
-          <p className="text-sm text-gray-500 capitalize">{weather.condition.replace(/([A-Z])/g, ' $1').trim()}</p>
+          <div className="text-3xl font-bold" style={{ color: '#f1f5f9' }}>
+            {weather?.temp}°F
+          </div>
+          <div className="text-sm" style={{ color: '#94a3b8' }}>
+            {weather?.condition} • {weather?.location}
+          </div>
         </div>
-        <div className="ml-auto text-right text-xs text-gray-500">
-          <p>💧 {weather.humidity}%</p>
-          <p>💨 {weather.wind} mph</p>
+        <div className="ml-auto text-right text-sm" style={{ color: '#64748b' }}>
+          <div>💨 {weather?.wind} km/h</div>
+          <div>📍 Zone {zone}</div>
         </div>
       </div>
-      
+
+      {/* Frost Dates */}
+      <div className="p-2 rounded-lg mb-4" style={{ background: '#0f172a' }}>
+        <div className="flex justify-between text-sm">
+          <span style={{ color: '#94a3b8' }}>🧊 Last Frost: <span style={{ color: '#f1f5f9' }}>{USDA_ZONES[zone]?.lastFrost || 'Unknown'}</span></span>
+          <span style={{ color: '#94a3b8' }}>🍂 First Frost: <span style={{ color: '#f1f5f9' }}>{USDA_ZONES[zone]?.firstFrost || 'Unknown'}</span></span>
+        </div>
+      </div>
+
       {/* 5-Day Forecast */}
-      <div className="flex justify-between mb-4">
-        {weather.forecast.map((day, i) => (
-          <div key={i} className="text-center">
-            <p className="text-xs text-gray-500">{i === 0 ? 'Today' : day.day}</p>
-            <p className="text-xl my-1">{WEATHER_ICONS[day.condition] || '🌤️'}</p>
-            <p className="text-xs">
-              <span className="text-gray-800 dark:text-gray-200">{day.high}°</span>
-              <span className="text-gray-400"> / {day.low}°</span>
-            </p>
+      <div className="grid grid-cols-5 gap-2 mb-4">
+        {weather?.forecast.map((day, i) => (
+          <div key={i} className="text-center p-2 rounded" style={{ background: '#0f172a' }}>
+            <div className="text-xs mb-1" style={{ color: '#64748b' }}>{day.day}</div>
+            <div className="text-xl mb-1">{day.icon}</div>
+            <div className="text-xs" style={{ color: '#f1f5f9' }}>{day.high}°</div>
+            <div className="text-xs" style={{ color: '#64748b' }}>{day.low}°</div>
           </div>
         ))}
       </div>
-      
-      {/* Frost Dates */}
-      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-3">
-        <div className="flex justify-between text-sm">
-          <div>
-            <p className="text-gray-500">Last Frost</p>
-            <p className="font-medium text-gray-700 dark:text-gray-200">{zoneData.lastFrost}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-gray-500">First Frost</p>
-            <p className="font-medium text-gray-700 dark:text-gray-200">{zoneData.firstFrost}</p>
-          </div>
+
+      {/* Gardening Tips */}
+      {tips.length > 0 && (
+        <div className="space-y-2">
+          {tips.map((tip, i) => (
+            <div 
+              key={i}
+              className="text-sm p-2 rounded"
+              style={{ 
+                background: tip.type === 'success' ? '#22c55e20' : tip.type === 'warning' ? '#f59e0b20' : '#3b82f620',
+                color: tip.type === 'success' ? '#22c55e' : tip.type === 'warning' ? '#f59e0b' : '#3b82f6'
+              }}
+            >
+              {tip.text}
+            </div>
+          ))}
         </div>
-        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
-          <p className={`text-sm font-medium ${
-            daysUntilFrost <= 14 ? 'text-red-600' :
-            daysUntilFrost <= 30 ? 'text-orange-600' :
-            'text-green-600'
-          }`}>
-            {daysUntilFrost <= 30 ? `⚠️ ${daysUntilFrost} days until frost` : `✅ ${daysUntilFrost} days until frost`}
-          </p>
+      )}
+
+      {/* Location Error */}
+      {locationError && (
+        <div className="mt-2 text-xs" style={{ color: '#f59e0b' }}>
+          {locationError}
         </div>
-      </div>
-      
-      {/* Planting Advice */}
-      <div className={`rounded-lg p-3 ${
-        advice.type === 'success' ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
-        advice.type === 'warning' ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
-        'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-      }`}>
-        <p className="text-sm font-medium">💡 {advice.text}</p>
-      </div>
-      
-      {/* Zone Info */}
-      <p className="text-xs text-gray-400 mt-3 text-center">
-        Based on USDA Zone {zone} ({zoneData.name})
-      </p>
+      )}
     </div>
   );
 }
