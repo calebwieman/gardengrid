@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 // USDA Zone data with frost dates (approximate by latitude)
 const USDA_ZONES: Record<number, { name: string; lastFrost: string; firstFrost: string; latRange: [number, number] }> = {
@@ -40,6 +40,14 @@ const WEATHER_CODES: Record<number, { condition: string; icon: string }> = {
   99: { condition: 'Thunderstorm', icon: '⛈️' },
 };
 
+interface GeocodingResult {
+  name: string;
+  latitude: number;
+  longitude: number;
+  admin1?: string;
+  country_code?: string;
+}
+
 interface OpenMeteoResponse {
   current_weather: {
     temperature: number;
@@ -60,6 +68,8 @@ interface WeatherData {
   isLive: boolean;
   forecast: { day: string; high: number; low: number; condition: string; icon: string }[];
   zone: number;
+  latitude: number;
+  longitude: number;
 }
 
 interface WeatherWidgetProps {
@@ -71,14 +81,28 @@ function getZoneFromLatitude(lat: number): number {
   for (const [zone, data] of Object.entries(USDA_ZONES)) {
     const [min, max] = data.latRange;
     if (lat >= min && lat < max) return parseInt(zone);
-    if (lat >= 51) return 3; // Northernmost
-    if (lat < 16) return 11; // Southernmost/tropical
+    if (lat >= 51) return 3;
+    if (lat < 16) return 11;
   }
-  return 6; // Default
+  return 6;
+}
+
+// Search for location using Open-Meteo Geocoding API
+async function searchLocation(query: string): Promise<GeocodingResult[]> {
+  try {
+    const response = await fetch(
+      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`
+    );
+    const data = await response.json();
+    return data.results || [];
+  } catch (error) {
+    console.error('Location search failed:', error);
+    return [];
+  }
 }
 
 // Fetch weather from Open-Meteo API (free, no API key)
-async function fetchLiveWeather(lat: number, lon: number): Promise<WeatherData | null> {
+async function fetchWeather(lat: number, lon: number): Promise<WeatherData | null> {
   try {
     const response = await fetch(
       `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=kmh`
@@ -90,15 +114,11 @@ async function fetchLiveWeather(lat: number, lon: number): Promise<WeatherData |
     const current = data.current_weather;
     const weatherInfo = WEATHER_CODES[current.weathercode] || { condition: 'Unknown', icon: '❓' };
     
-    // Get zone from latitude
     const zone = getZoneFromLatitude(lat);
-    const zoneData = USDA_ZONES[zone];
-    
-    // Generate simple 5-day forecast (Open-Meteo free tier has limited forecast)
-    const forecast = [];
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const today = new Date().getDay();
     
+    const forecast = [];
     for (let i = 1; i <= 5; i++) {
       const dayIndex = (today + i) % 7;
       const variation = Math.random() * 15 - 7;
@@ -115,124 +135,98 @@ async function fetchLiveWeather(lat: number, lon: number): Promise<WeatherData |
       temp: Math.round(current.temperature),
       condition: weatherInfo.condition,
       icon: weatherInfo.icon,
-      humidity: 0, // Not in current_weather, would need hourly
+      humidity: 0,
       wind: Math.round(current.windspeed),
       location: 'Your Location',
       isLive: true,
       forecast,
       zone,
+      latitude: lat,
+      longitude: lon,
     };
   } catch (error) {
-    console.error('Failed to fetch live weather:', error);
+    console.error('Failed to fetch weather:', error);
     return null;
   }
 }
 
-// Fallback mock data when location unavailable
-function getMockWeatherData(zone: number): WeatherData {
-  const month = new Date().getMonth();
-  const isSpring = month >= 2 && month <= 4;
-  const isSummer = month >= 5 && month <= 7;
-  const isFall = month >= 8 && month <= 10;
-  
-  let baseTemp = 65;
-  if (zone <= 5) baseTemp = isSpring ? 55 : isSummer ? 75 : isFall ? 50 : 35;
-  else if (zone <= 7) baseTemp = isSpring ? 60 : isSummer ? 80 : isFall ? 55 : 42;
-  else baseTemp = isSpring ? 70 : isSummer ? 85 : isFall ? 65 : 55;
-  
-  const zoneAdjustment = (zone - 6) * 3;
-  baseTemp += zoneAdjustment;
-  
-  const conditions = [
-    { condition: 'Sunny', icon: '☀️' },
-    { condition: 'Partly Cloudy', icon: '⛅' },
-    { condition: 'Cloudy', icon: '☁️' },
-    { condition: 'Rainy', icon: '🌧️' },
-  ];
-  const currentCondition = conditions[Math.floor(Math.random() * (isSpring ? 2 : 4))];
-  
-  const forecastDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const today = new Date().getDay();
-  
-  const forecast = [];
-  for (let i = 0; i < 5; i++) {
-    const dayIndex = (today + i) % 7;
-    const variation = Math.random() * 10 - 5;
-    const cond = conditions[Math.floor(Math.random() * 4)];
-    forecast.push({
-      day: forecastDays[dayIndex],
-      high: Math.round(baseTemp + variation),
-      low: Math.round(baseTemp - 10 + variation),
-      condition: cond.condition,
-      icon: cond.icon,
-    });
-  }
-  
-  const zoneData = USDA_ZONES[zone] || USDA_ZONES[6];
-  
-  return {
-    temp: Math.round(baseTemp),
-    condition: currentCondition.condition,
-    icon: currentCondition.icon,
-    humidity: Math.round(40 + Math.random() * 40),
-    wind: Math.round(5 + Math.random() * 15),
-    location: zoneData.name,
-    isLive: false,
-    forecast,
-    zone,
-  };
-}
+// Default to Stillwater, OK
+const DEFAULT_LAT = 36.1156;
+const DEFAULT_LON = -97.0586;
 
 export default function WeatherWidget({ defaultZone = 6 }: WeatherWidgetProps) {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [locationError, setLocationError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<GeocodingResult[]>([]);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [zone, setZone] = useState(defaultZone);
+  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
+  // Load saved location from localStorage
   useEffect(() => {
-    const getWeather = async () => {
+    const savedLat = localStorage.getItem('gardengrid_lat');
+    const savedLon = localStorage.getItem('gardengrid_lon');
+    
+    const loadWeather = async () => {
       setLoading(true);
       
-      // Try to get user's location
-      if (navigator.geolocation) {
-        try {
-          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              timeout: 10000,
-              maximumAge: 3600000, // Cache for 1 hour
-            });
-          });
-          
-          const { latitude, longitude } = position.coords;
-          
-          // Fetch live weather from Open-Meteo
-          const liveWeather = await fetchLiveWeather(latitude, longitude);
-          
-          if (liveWeather) {
-            setWeather(liveWeather);
-            setZone(liveWeather.zone);
-            setLoading(false);
-            return;
-          }
-        } catch (error) {
-          // Geolocation failed, use mock data
-          if (error instanceof GeolocationPositionError) {
-            if (error.code === error.PERMISSION_DENIED) {
-              setLocationError('Location access denied - using estimated zone');
-            } else if (error.code === error.TIMEOUT) {
-              setLocationError('Location timeout - using estimated zone');
-            }
-          }
-        }
-      }
+      const lat = savedLat ? parseFloat(savedLat) : DEFAULT_LAT;
+      const lon = savedLon ? parseFloat(savedLon) : DEFAULT_LON;
       
-      // Fallback to mock data
-      setWeather(getMockWeatherData(zone));
+      const weatherData = await fetchWeather(lat, lon);
+      
+      if (weatherData) {
+        setWeather(weatherData);
+        setZone(weatherData.zone);
+      }
       setLoading(false);
     };
-
-    getWeather();
+    
+    loadWeather();
   }, []);
+
+  // Search for location as user types
+  useEffect(() => {
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    
+    if (searchQuery.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    
+    setSearching(true);
+    searchTimeout.current = setTimeout(async () => {
+      const results = await searchLocation(searchQuery);
+      setSearchResults(results);
+      setSearching(false);
+    }, 300);
+    
+    return () => {
+      if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    };
+  }, [searchQuery]);
+
+  const selectLocation = async (result: GeocodingResult) => {
+    // Save to localStorage
+    localStorage.setItem('gardengrid_lat', result.latitude.toString());
+    localStorage.setItem('gardengrid_lon', result.longitude.toString());
+    
+    setShowSearch(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    
+    setLoading(true);
+    const weatherData = await fetchWeather(result.latitude, result.longitude);
+    
+    if (weatherData) {
+      weatherData.location = result.name + (result.admin1 ? `, ${result.admin1}` : '');
+      setWeather(weatherData);
+      setZone(weatherData.zone);
+    }
+    setLoading(false);
+  };
 
   const getGardeningTips = () => {
     if (!weather) return [];
@@ -277,15 +271,56 @@ export default function WeatherWidget({ defaultZone = 6 }: WeatherWidgetProps) {
 
   return (
     <div className="p-4 rounded-xl" style={{ background: '#1e293b' }}>
-      {/* Header */}
+      {/* Header with location selector */}
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold" style={{ color: '#f1f5f9' }}>
-          {weather?.isLive ? '🌤️ Live Weather' : '🌤️ Weather'}
+          🌤️ Weather
         </h3>
-        <span className="text-xs px-2 py-1 rounded-full" style={{ background: weather?.isLive ? '#22c55e20' : '#f59e0b20', color: weather?.isLive ? '#22c55e' : '#f59e0b' }}>
-          {weather?.isLive ? '● Live' : '○ Estimated'}
-        </span>
+        <button
+          onClick={() => setShowSearch(!showSearch)}
+          className="text-xs px-2 py-1 rounded-full transition-colors"
+          style={{ background: '#3b82f620', color: '#3b82f6' }}
+        >
+          📍 {weather?.location || 'Set Location'}
+        </button>
       </div>
+
+      {/* Location Search */}
+      {showSearch && (
+        <div className="mb-4 p-3 rounded-lg" style={{ background: '#0f172a' }}>
+          <input
+            type="text"
+            placeholder="Search city..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg text-sm"
+            style={{ 
+              background: '#1e293b', 
+              color: '#f1f5f9', 
+              border: '1px solid #334155',
+              outline: 'none'
+            }}
+            autoFocus
+          />
+          {searching && (
+            <div className="text-xs mt-2" style={{ color: '#64748b' }}>Searching...</div>
+          )}
+          {searchResults.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {searchResults.map((result, i) => (
+                <button
+                  key={i}
+                  onClick={() => selectLocation(result)}
+                  className="w-full text-left px-3 py-2 rounded text-sm hover:bg-slate-700 transition-colors"
+                  style={{ color: '#f1f5f9' }}
+                >
+                  📍 {result.name}, {result.admin1}, {result.country_code}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Current Weather */}
       <div className="flex items-center gap-3 mb-4">
@@ -339,13 +374,6 @@ export default function WeatherWidget({ defaultZone = 6 }: WeatherWidgetProps) {
               {tip.text}
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Location Error */}
-      {locationError && (
-        <div className="mt-2 text-xs" style={{ color: '#f59e0b' }}>
-          {locationError}
         </div>
       )}
     </div>
