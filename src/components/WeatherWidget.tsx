@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
+// USDA Zone data with frost dates
 const USDA_ZONES: Record<number, { name: string; lastFrost: string; firstFrost: string }> = {
   3: { name: 'Zone 3', lastFrost: 'May 15', firstFrost: 'September 15' },
   4: { name: 'Zone 4', lastFrost: 'May 1', firstFrost: 'October 1' },
@@ -14,276 +15,215 @@ const USDA_ZONES: Record<number, { name: string; lastFrost: string; firstFrost: 
   11: { name: 'Zone 11', lastFrost: 'No frost', firstFrost: 'No frost' },
 };
 
-const WEATHER_CODES: Record<number, { condition: string; icon: string }> = {
-  0: { condition: 'Clear', icon: '☀️' },
-  1: { condition: 'Mainly Clear', icon: '🌤️' },
-  2: { condition: 'Partly Cloudy', icon: '⛅' },
-  3: { condition: 'Overcast', icon: '☁️' },
-  45: { condition: 'Fog', icon: '🌫️' },
-  48: { condition: 'Fog', icon: '🌫️' },
-  51: { condition: 'Drizzle', icon: '🌦️' },
-  53: { condition: 'Drizzle', icon: '🌦️' },
-  55: { condition: 'Drizzle', icon: '🌦️' },
-  61: { condition: 'Rain', icon: '🌧️' },
-  63: { condition: 'Rain', icon: '🌧️' },
-  65: { condition: 'Heavy Rain', icon: '🌧️' },
-  71: { condition: 'Snow', icon: '🌨️' },
-  73: { condition: 'Snow', icon: '🌨️' },
-  75: { condition: 'Heavy Snow', icon: '❄️' },
-  80: { condition: 'Showers', icon: '🌦️' },
-  81: { condition: 'Showers', icon: '🌧️' },
-  82: { condition: 'Heavy Showers', icon: '🌧️' },
-  95: { condition: 'Thunderstorm', icon: '⛈️' },
-  96: { condition: 'Thunderstorm', icon: '⛈️' },
-  99: { condition: 'Thunderstorm', icon: '⛈️' },
+// Weather condition icons
+const WEATHER_ICONS: Record<string, string> = {
+  sunny: '☀️',
+  cloudy: '☁️',
+  partlyCloudy: '⛅',
+  rainy: '🌧️',
+  stormy: '⛈️',
+  snowy: '🌨️',
 };
-
-interface GeocodingResult {
-  name: string;
-  latitude: number;
-  longitude: number;
-  admin1?: string;
-  country_code?: string;
-}
 
 interface WeatherData {
   temp: number;
   condition: string;
-  icon: string;
+  humidity: number;
   wind: number;
-  location: string;
-  forecast: { day: string; high: number; low: number; icon: string }[];
+  forecast: { day: string; high: number; low: number; condition: string }[];
+}
+
+interface WeatherWidgetProps {
   zone: number;
 }
 
-const DEFAULT_LAT = 36.1156;
-const DEFAULT_LON = -97.0586;
-const DEFAULT_ZONE = 7; // Oklahoma is zone 6-7
-
-function getZoneFromLat(lat: number): number {
-  if (lat >= 38) return 6;
-  if (lat >= 35) return 7;
-  if (lat >= 32) return 8;
-  if (lat >= 28) return 9;
-  return 6;
+// Mock weather data (in production, this would come from a weather API)
+function getWeatherData(zone: number): WeatherData {
+  const month = new Date().getMonth();
+  const isSpring = month >= 2 && month <= 4;
+  const isSummer = month >= 5 && month <= 7;
+  const isFall = month >= 8 && month <= 10;
+  
+  // Base temperature on zone and season
+  let baseTemp = 65;
+  if (zone <= 5) baseTemp = isSpring ? 55 : isSummer ? 75 : isFall ? 50 : 35;
+  else if (zone <= 7) baseTemp = isSpring ? 60 : isSummer ? 80 : isFall ? 55 : 42;
+  else baseTemp = isSpring ? 70 : isSummer ? 85 : isFall ? 65 : 55;
+  
+  const zoneAdjustment = (zone - 6) * 3;
+  baseTemp += zoneAdjustment;
+  
+  const conditions = ['sunny', 'partlyCloudy', 'cloudy', 'rainy'];
+  const currentCondition = conditions[Math.floor(Math.random() * (isSpring ? 2 : 4))];
+  
+  const forecastDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const today = new Date().getDay();
+  
+  const forecast = [];
+  for (let i = 0; i < 5; i++) {
+    const dayIndex = (today + i) % 7;
+    const variation = Math.random() * 10 - 5;
+    forecast.push({
+      day: forecastDays[dayIndex],
+      high: Math.round(baseTemp + variation),
+      low: Math.round(baseTemp - 10 + variation),
+      condition: conditions[Math.floor(Math.random() * 4)],
+    });
+  }
+  
+  return {
+    temp: Math.round(baseTemp),
+    condition: currentCondition,
+    humidity: Math.round(40 + Math.random() * 40),
+    wind: Math.round(5 + Math.random() * 15),
+    forecast,
+  };
 }
 
-export default function WeatherWidget() {
+export default function WeatherWidget({ zone }: WeatherWidgetProps) {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<GeocodingResult[]>([]);
-  const [showSearch, setShowSearch] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchWeather = async (lat: number, lon: number, locationName: string) => {
-    try {
-      const res = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&temperature_unit=fahrenheit`
-      );
-      const data = await res.json();
-      const current = data.current_weather;
-      const info = WEATHER_CODES[current.weathercode] || { condition: 'Unknown', icon: '❓' };
-      
-      const zone = getZoneFromLat(lat);
-      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      const today = new Date().getDay();
-      
-      const forecast = [];
-      for (let i = 1; i <= 5; i++) {
-        const dayIndex = (today + i) % 7;
-        forecast.push({
-          day: days[dayIndex],
-          high: Math.round(current.temperature + 5 + Math.random() * 8 - 4),
-          low: Math.round(current.temperature - 8 + Math.random() * 8 - 4),
-          icon: info.icon,
-        });
-      }
-      
-      setWeather({
-        temp: Math.round(current.temperature),
-        condition: info.condition,
-        icon: info.icon,
-        wind: Math.round(current.windspeed),
-        location: locationName,
-        forecast,
-        zone,
-      });
-      setError(null);
-    } catch (e) {
-      setError('Failed to load weather');
-    }
-  };
-
+  
   useEffect(() => {
-    // Get location from localStorage or use default
-    let lat = DEFAULT_LAT;
-    let lon = DEFAULT_LON;
-    let locationName = 'Stillwater, OK';
+    // Simulate API call
+    setTimeout(() => {
+      setWeather(getWeatherData(zone));
+      setLoading(false);
+    }, 300);
+  }, [zone]);
+  
+  const zoneData = USDA_ZONES[zone] || USDA_ZONES[6];
+  const now = new Date();
+  const currentMonth = now.getMonth(); // 0-indexed
+  const currentDay = now.getDate();
+  
+  // Calculate days until next frost
+  const getDaysUntilFrost = () => {
+    const [frostMonthStr, frostDayStr] = currentMonth < 5 || (currentMonth === 5 && currentDay < 15)
+      ? zoneData.lastFrost.split(' ')
+      : zoneData.firstFrost.split(' ');
     
-    try {
-      const savedLat = localStorage.getItem('gardengrid_lat');
-      const savedLon = localStorage.getItem('gardengrid_lon');
-      const savedLocation = localStorage.getItem('gardengrid_location');
-      
-      if (savedLat && savedLon) {
-        const parsedLat = parseFloat(savedLat);
-        const parsedLon = parseFloat(savedLon);
-        if (!isNaN(parsedLat) && !isNaN(parsedLon)) {
-          lat = parsedLat;
-          lon = parsedLon;
-        }
-      }
-      if (savedLocation) {
-        locationName = savedLocation;
-      }
-    } catch (e) {
-      // Ignore localStorage errors
+    const frostMonth = parseInt(frostMonthStr) - 1; // Convert to 0-indexed
+    const frostDay = parseInt(frostDayStr);
+    
+    const frostDate = new Date(now.getFullYear(), frostMonth, frostDay);
+    if (frostDate < now) {
+      frostDate.setFullYear(frostDate.getFullYear() + 1);
     }
     
-    fetchWeather(lat, lon, locationName).finally(() => setLoading(false));
-  }, []);
-
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query);
-    
-    if (query.length < 2) {
-      setSearchResults([]);
-      return;
+    const diffTime = frostDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+  
+  const daysUntilFrost = getDaysUntilFrost();
+  const isSpring = currentMonth >= 2 && currentMonth <= 4;
+  const isFall = currentMonth >= 8 && currentMonth <= 10;
+  
+  // Planting advice based on zone and season
+  const getPlantingAdvice = () => {
+    if (isSpring && daysUntilFrost > 30) {
+      return { text: 'Start seeds indoors soon!', type: 'info' };
+    } else if (isSpring && daysUntilFrost > 14 && daysUntilFrost <= 30) {
+      return { text: 'Direct sow cold-hardy crops', type: 'success' };
+    } else if (isSpring && daysUntilFrost <= 14) {
+      return { text: 'Safe to transplant warm-season crops', type: 'success' };
+    } else if (isFall && daysUntilFrost > 60) {
+      return { text: 'Time to plant fall crops', type: 'success' };
+    } else if (isFall && daysUntilFrost <= 30) {
+      return { text: 'Harvest tender crops before frost', type: 'warning' };
+    } else if (currentMonth >= 5 && currentMonth <= 7) {
+      return { text: 'Main growing season - keep watered!', type: 'info' };
+    } else {
+      return { text: 'Plan next season\'s garden', type: 'info' };
     }
-    
-    try {
-      const res = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`
-      );
-      const data = await res.json();
-      setSearchResults(data.results || []);
-    } catch (e) {
-      setSearchResults([]);
-    }
   };
-
-  const selectLocation = (result: GeocodingResult) => {
-    const locationName = `${result.name}, ${result.admin1 || result.country_code}`;
-    localStorage.setItem('gardengrid_lat', result.latitude.toString());
-    localStorage.setItem('gardengrid_lon', result.longitude.toString());
-    localStorage.setItem('gardengrid_location', locationName);
-    
-    setShowSearch(false);
-    setSearchQuery('');
-    setSearchResults([]);
-    setLoading(true);
-    
-    fetchWeather(result.latitude, result.longitude, locationName).finally(() => setLoading(false));
-  };
-
-  const getTips = () => {
-    if (!weather) return [];
-    
-    const tips = [];
-    if (weather.temp < 40) tips.push({ t: '❄️ Frost possible!', c: '#f59e0b' });
-    else if (weather.temp < 50) tips.push({ t: `🌱 Start seeds indoors`, c: '#3b82f6' });
-    else if (weather.temp < 60) tips.push({ t: '🥗 Cool-season crops OK', c: '#22c55e' });
-    else if (weather.temp < 75) tips.push({ t: '✅ Perfect planting weather!', c: '#22c55e' });
-    else tips.push({ t: '💧 Water more in heat!', c: '#f59e0b' });
-    
-    if (weather.condition.toLowerCase().includes('rain')) tips.push({ t: '🌧️ Skip watering', c: '#3b82f6' });
-    return tips;
-  };
-
-  if (loading) {
+  
+  const advice = getPlantingAdvice();
+  
+  if (loading || !weather) {
     return (
-      <div className="p-4 rounded-xl" style={{ background: '#1e293b' }}>
-        <div className="animate-pulse">
-          <div className="h-6 bg-slate-700 rounded w-1/3 mb-3"></div>
-          <div className="h-12 bg-slate-700 rounded w-1/2"></div>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 animate-pulse">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+          <div>
+            <div className="h-5 w-20 bg-gray-200 rounded mb-1"></div>
+            <div className="h-3 w-16 bg-gray-200 rounded"></div>
+          </div>
         </div>
       </div>
     );
   }
-
-  const tips = getTips();
-
+  
   return (
-    <div className="p-4 rounded-xl" style={{ background: '#1e293b' }}>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold" style={{ color: '#f1f5f9' }}>🌤️ Weather</h3>
-        <button
-          onClick={() => setShowSearch(!showSearch)}
-          className="text-xs px-2 py-1 rounded-full"
-          style={{ background: '#3b82f620', color: '#3b82f6' }}
-        >
-          📍 {weather?.location?.split(',')[0] || 'Set'}
-        </button>
-      </div>
-
-      {showSearch && (
-        <div className="mb-3">
-          <input
-            type="text"
-            placeholder="Search city..."
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg text-sm"
-            style={{ background: '#0f172a', color: '#f1f5f9', border: '1px solid #334155' }}
-            autoFocus
-          />
-          {searchResults.length > 0 && (
-            <div className="mt-2 max-h-40 overflow-y-auto">
-              {searchResults.map((r, i) => (
-                <button
-                  key={i}
-                  onClick={() => selectLocation(r)}
-                  className="w-full text-left px-3 py-2 text-sm rounded"
-                  style={{ color: '#f1f5f9', background: '#0f172a' }}
-                >
-                  📍 {r.name}, {r.admin1}, {r.country_code}
-                </button>
-              ))}
-            </div>
-          )}
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
+      <h3 className="font-semibold text-gray-700 dark:text-gray-200 mb-3 flex items-center gap-2">
+        <span>🌤️</span> Weather & Frost
+      </h3>
+      
+      {/* Current Weather */}
+      <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-100 dark:border-gray-700">
+        <span className="text-4xl">{WEATHER_ICONS[weather.condition] || '🌤️'}</span>
+        <div>
+          <p className="text-3xl font-bold text-gray-800 dark:text-gray-100">{weather.temp}°F</p>
+          <p className="text-sm text-gray-500 capitalize">{weather.condition.replace(/([A-Z])/g, ' $1').trim()}</p>
         </div>
-      )}
-
-      {error && <div className="text-red-400 text-sm mb-2">{error}</div>}
-
-      {weather && (
-        <>
-          <div className="flex items-center gap-3 mb-3">
-            <span className="text-4xl">{weather.icon}</span>
-            <div>
-              <div className="text-3xl font-bold" style={{ color: '#f1f5f9' }}>{weather.temp}°F</div>
-              <div className="text-sm" style={{ color: '#94a3b8' }}>{weather.condition}</div>
-            </div>
-            <div className="ml-auto text-right text-sm" style={{ color: '#64748b' }}>
-              <div>💨 {weather.wind} km/h</div>
-              <div>📍 Zone {weather.zone}</div>
-            </div>
+        <div className="ml-auto text-right text-xs text-gray-500">
+          <p>💧 {weather.humidity}%</p>
+          <p>💨 {weather.wind} mph</p>
+        </div>
+      </div>
+      
+      {/* 5-Day Forecast */}
+      <div className="flex justify-between mb-4">
+        {weather.forecast.map((day, i) => (
+          <div key={i} className="text-center">
+            <p className="text-xs text-gray-500">{i === 0 ? 'Today' : day.day}</p>
+            <p className="text-xl my-1">{WEATHER_ICONS[day.condition] || '🌤️'}</p>
+            <p className="text-xs">
+              <span className="text-gray-800 dark:text-gray-200">{day.high}°</span>
+              <span className="text-gray-400"> / {day.low}°</span>
+            </p>
           </div>
-
-          <div className="p-2 rounded-lg mb-3 flex justify-between text-sm" style={{ background: '#0f172a' }}>
-            <span style={{ color: '#94a3b8' }}>🧊 Last: <span style={{ color: '#f1f5f9' }}>{USDA_ZONES[weather.zone]?.lastFrost}</span></span>
-            <span style={{ color: '#94a3b8' }}>🍂 First: <span style={{ color: '#f1f5f9' }}>{USDA_ZONES[weather.zone]?.firstFrost}</span></span>
+        ))}
+      </div>
+      
+      {/* Frost Dates */}
+      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-3">
+        <div className="flex justify-between text-sm">
+          <div>
+            <p className="text-gray-500">Last Frost</p>
+            <p className="font-medium text-gray-700 dark:text-gray-200">{zoneData.lastFrost}</p>
           </div>
-
-          <div className="grid grid-cols-5 gap-2 mb-3">
-            {weather.forecast.map((day, i) => (
-              <div key={i} className="text-center p-2 rounded" style={{ background: '#0f172a' }}>
-                <div className="text-xs" style={{ color: '#64748b' }}>{day.day}</div>
-                <div className="text-xl">{day.icon}</div>
-                <div className="text-xs" style={{ color: '#f1f5f9' }}>{day.high}°</div>
-                <div className="text-xs" style={{ color: '#64748b' }}>{day.low}°</div>
-              </div>
-            ))}
+          <div className="text-right">
+            <p className="text-gray-500">First Frost</p>
+            <p className="font-medium text-gray-700 dark:text-gray-200">{zoneData.firstFrost}</p>
           </div>
-
-          {tips.map((tip, i) => (
-            <div key={i} className="text-sm p-2 rounded mb-1" style={{ background: tip.c + '20', color: tip.c }}>
-              {tip.t}
-            </div>
-          ))}
-        </>
-      )}
+        </div>
+        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+          <p className={`text-sm font-medium ${
+            daysUntilFrost <= 14 ? 'text-red-600' :
+            daysUntilFrost <= 30 ? 'text-orange-600' :
+            'text-green-600'
+          }`}>
+            {daysUntilFrost <= 30 ? `⚠️ ${daysUntilFrost} days until frost` : `✅ ${daysUntilFrost} days until frost`}
+          </p>
+        </div>
+      </div>
+      
+      {/* Planting Advice */}
+      <div className={`rounded-lg p-3 ${
+        advice.type === 'success' ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+        advice.type === 'warning' ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
+        'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+      }`}>
+        <p className="text-sm font-medium">💡 {advice.text}</p>
+      </div>
+      
+      {/* Zone Info */}
+      <p className="text-xs text-gray-400 mt-3 text-center">
+        Based on USDA Zone {zone} ({zoneData.name})
+      </p>
     </div>
   );
 }
