@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 // USDA Zone data with frost dates (approximate by latitude)
 const USDA_ZONES: Record<number, { name: string; lastFrost: string; firstFrost: string; latRange: [number, number] }> = {
@@ -76,83 +76,23 @@ interface WeatherWidgetProps {
   defaultZone?: number;
 }
 
-// Estimate USDA zone from latitude
 function getZoneFromLatitude(lat: number): number {
-  for (const [zone, data] of Object.entries(USDA_ZONES)) {
-    const [min, max] = data.latRange;
-    if (lat >= min && lat < max) return parseInt(zone);
-    if (lat >= 51) return 3;
-    if (lat < 16) return 11;
-  }
+  if (lat >= 51) return 3;
+  if (lat >= 47) return 4;
+  if (lat >= 43) return 5;
+  if (lat >= 39) return 6;
+  if (lat >= 35) return 7;
+  if (lat >= 31) return 8;
+  if (lat >= 26) return 9;
+  if (lat >= 21) return 10;
+  if (lat >= 16) return 11;
   return 6;
-}
-
-// Search for location using Open-Meteo Geocoding API
-async function searchLocation(query: string): Promise<GeocodingResult[]> {
-  try {
-    const response = await fetch(
-      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`
-    );
-    const data = await response.json();
-    return data.results || [];
-  } catch (error) {
-    console.error('Location search failed:', error);
-    return [];
-  }
-}
-
-// Fetch weather from Open-Meteo API (free, no API key)
-async function fetchWeather(lat: number, lon: number): Promise<WeatherData | null> {
-  try {
-    const response = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=kmh`
-    );
-    
-    if (!response.ok) throw new Error('Weather API error');
-    
-    const data: OpenMeteoResponse = await response.json();
-    const current = data.current_weather;
-    const weatherInfo = WEATHER_CODES[current.weathercode] || { condition: 'Unknown', icon: '❓' };
-    
-    const zone = getZoneFromLatitude(lat);
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const today = new Date().getDay();
-    
-    const forecast = [];
-    for (let i = 1; i <= 5; i++) {
-      const dayIndex = (today + i) % 7;
-      const variation = Math.random() * 15 - 7;
-      forecast.push({
-        day: days[dayIndex],
-        high: Math.round(current.temperature + 5 + variation),
-        low: Math.round(current.temperature - 8 + variation),
-        condition: weatherInfo.condition,
-        icon: weatherInfo.icon,
-      });
-    }
-    
-    return {
-      temp: Math.round(current.temperature),
-      condition: weatherInfo.condition,
-      icon: weatherInfo.icon,
-      humidity: 0,
-      wind: Math.round(current.windspeed),
-      location: 'Your Location',
-      isLive: true,
-      forecast,
-      zone,
-      latitude: lat,
-      longitude: lon,
-    };
-  } catch (error) {
-    console.error('Failed to fetch weather:', error);
-    return null;
-  }
 }
 
 // Default to Stillwater, OK
 const DEFAULT_LAT = 36.1156;
 const DEFAULT_LON = -97.0586;
+const DEFAULT_LOCATION = 'Stillwater, OK';
 
 export default function WeatherWidget({ defaultZone = 6 }: WeatherWidgetProps) {
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -160,26 +100,60 @@ export default function WeatherWidget({ defaultZone = 6 }: WeatherWidgetProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<GeocodingResult[]>([]);
   const [showSearch, setShowSearch] = useState(false);
-  const [searching, setSearching] = useState(false);
   const [zone, setZone] = useState(defaultZone);
-  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  // Load saved location from localStorage
+  // Load weather on mount
   useEffect(() => {
-    const savedLat = localStorage.getItem('gardengrid_lat');
-    const savedLon = localStorage.getItem('gardengrid_lon');
-    
     const loadWeather = async () => {
       setLoading(true);
+      
+      const savedLat = localStorage.getItem('gardengrid_lat');
+      const savedLon = localStorage.getItem('gardengrid_lon');
+      const savedLocation = localStorage.getItem('gardengrid_location');
       
       const lat = savedLat ? parseFloat(savedLat) : DEFAULT_LAT;
       const lon = savedLon ? parseFloat(savedLon) : DEFAULT_LON;
       
-      const weatherData = await fetchWeather(lat, lon);
-      
-      if (weatherData) {
-        setWeather(weatherData);
-        setZone(weatherData.zone);
+      try {
+        const response = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=kmh`
+        );
+        const data: OpenMeteoResponse = await response.json();
+        const current = data.current_weather;
+        const weatherInfo = WEATHER_CODES[current.weathercode] || { condition: 'Unknown', icon: '❓' };
+        
+        const weatherZone = getZoneFromLatitude(lat);
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const today = new Date().getDay();
+        
+        const forecast = [];
+        for (let i = 1; i <= 5; i++) {
+          const dayIndex = (today + i) % 7;
+          forecast.push({
+            day: days[dayIndex],
+            high: Math.round(current.temperature + 5 + Math.random() * 10 - 5),
+            low: Math.round(current.temperature - 8 + Math.random() * 10 - 5),
+            condition: weatherInfo.condition,
+            icon: weatherInfo.icon,
+          });
+        }
+        
+        setWeather({
+          temp: Math.round(current.temperature),
+          condition: weatherInfo.condition,
+          icon: weatherInfo.icon,
+          humidity: 0,
+          wind: Math.round(current.windspeed),
+          location: savedLocation || DEFAULT_LOCATION,
+          isLive: true,
+          forecast,
+          zone: weatherZone,
+          latitude: lat,
+          longitude: lon,
+        });
+        setZone(weatherZone);
+      } catch (e) {
+        console.error('Weather fetch failed:', e);
       }
       setLoading(false);
     };
@@ -187,43 +161,77 @@ export default function WeatherWidget({ defaultZone = 6 }: WeatherWidgetProps) {
     loadWeather();
   }, []);
 
-  // Search for location as user types
-  useEffect(() => {
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+  // Search handler
+  const handleSearch = useCallback(async (query: string) => {
+    setSearchQuery(query);
     
-    if (searchQuery.length < 2) {
+    if (query.length < 2) {
       setSearchResults([]);
       return;
     }
     
-    setSearching(true);
-    searchTimeout.current = setTimeout(async () => {
-      const results = await searchLocation(searchQuery);
-      setSearchResults(results);
-      setSearching(false);
-    }, 300);
-    
-    return () => {
-      if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    };
-  }, [searchQuery]);
+    try {
+      const response = await fetch(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`
+      );
+      const data = await response.json();
+      setSearchResults(data.results || []);
+    } catch (e) {
+      console.error('Search failed:', e);
+      setSearchResults([]);
+    }
+  }, []);
 
   const selectLocation = async (result: GeocodingResult) => {
-    // Save to localStorage
     localStorage.setItem('gardengrid_lat', result.latitude.toString());
     localStorage.setItem('gardengrid_lon', result.longitude.toString());
+    localStorage.setItem('gardengrid_location', `${result.name}, ${result.admin1 || result.country_code}`);
     
     setShowSearch(false);
     setSearchQuery('');
     setSearchResults([]);
-    
     setLoading(true);
-    const weatherData = await fetchWeather(result.latitude, result.longitude);
     
-    if (weatherData) {
-      weatherData.location = result.name + (result.admin1 ? `, ${result.admin1}` : '');
-      setWeather(weatherData);
-      setZone(weatherData.zone);
+    try {
+      const response = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${result.latitude}&longitude=${result.longitude}&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=kmh`
+      );
+      const data: OpenMeteoResponse = await response.json();
+      const current = data.current_weather;
+      const weatherInfo = WEATHER_CODES[current.weathercode] || { condition: 'Unknown', icon: '❓' };
+      
+      const weatherZone = getZoneFromLatitude(result.latitude);
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const today = new Date().getDay();
+      
+      const forecast = [];
+      for (let i = 1; i <= 5; i++) {
+        const dayIndex = (today + i) % 7;
+        forecast.push({
+          day: days[dayIndex],
+          high: Math.round(current.temperature + 5 + Math.random() * 10 - 5),
+          low: Math.round(current.temperature - 8 + Math.random() * 10 - 5),
+          condition: weatherInfo.condition,
+          icon: weatherInfo.icon,
+        });
+      }
+      
+      setWeather({
+        temp: Math.round(current.temperature),
+        condition: weatherInfo.condition,
+        icon: weatherInfo.icon,
+        humidity: 0,
+        wind: Math.round(current.windspeed),
+        location: `${result.name}, ${result.admin1 || result.country_code}`,
+        isLive: true,
+        forecast,
+        zone: weatherZone,
+        latitude: result.latitude,
+        longitude: result.longitude,
+      });
+      setZone(weatherZone);
+    } catch (e) {
+      console.error('Weather fetch failed:', e);
     }
     setLoading(false);
   };
@@ -236,8 +244,7 @@ export default function WeatherWidget({ defaultZone = 6 }: WeatherWidgetProps) {
     if (weather.temp < 40) {
       tips.push({ text: '❄️ Frost possible - protect tender plants', type: 'warning' });
     } else if (weather.temp >= 40 && weather.temp < 50) {
-      const zoneData = USDA_ZONES[zone];
-      tips.push({ text: `🌱 Start seeds indoors (frost after ${zoneData?.lastFrost || 'late spring'})`, type: 'info' });
+      tips.push({ text: `🌱 Start seeds indoors (frost after ${USDA_ZONES[zone]?.lastFrost || 'late spring'})`, type: 'info' });
     } else if (weather.temp >= 50 && weather.temp < 60) {
       tips.push({ text: '🥗 Cool-season crops can be planted', type: 'success' });
     } else if (weather.temp >= 60 && weather.temp < 75) {
@@ -248,8 +255,8 @@ export default function WeatherWidget({ defaultZone = 6 }: WeatherWidgetProps) {
     
     if (weather.condition.toLowerCase().includes('rain')) {
       tips.push({ text: '🌧️ Skip watering - rain expected', type: 'info' });
-    } else if (weather.condition.toLowerCase().includes('clear') || weather.condition.toLowerCase().includes('sunny')) {
-      tips.push({ text: '☀️ Remember sunscreen & shade for tender seedlings', type: 'info' });
+    } else if (weather.condition.toLowerCase().includes('clear')) {
+      tips.push({ text: '☀️ Remember sunscreen & shade for seedlings', type: 'info' });
     }
     
     return tips;
@@ -271,48 +278,43 @@ export default function WeatherWidget({ defaultZone = 6 }: WeatherWidgetProps) {
 
   return (
     <div className="p-4 rounded-xl" style={{ background: '#1e293b' }}>
-      {/* Header with location selector */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold" style={{ color: '#f1f5f9' }}>
-          🌤️ Weather
-        </h3>
+        <h3 className="font-semibold" style={{ color: '#f1f5f9' }}>🌤️ Weather</h3>
         <button
           onClick={() => setShowSearch(!showSearch)}
-          className="text-xs px-2 py-1 rounded-full transition-colors"
+          className="text-xs px-2 py-1 rounded-full"
           style={{ background: '#3b82f620', color: '#3b82f6' }}
         >
-          📍 {weather?.location || 'Set Location'}
+          📍 {weather?.location?.split(',')[0] || 'Set Location'}
         </button>
       </div>
 
-      {/* Location Search */}
+      {/* Search Box */}
       {showSearch && (
-        <div className="mb-4 p-3 rounded-lg" style={{ background: '#0f172a' }}>
+        <div className="mb-4">
           <input
             type="text"
             placeholder="Search city..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearch(e.target.value)}
             className="w-full px-3 py-2 rounded-lg text-sm"
             style={{ 
-              background: '#1e293b', 
+              background: '#0f172a', 
               color: '#f1f5f9', 
               border: '1px solid #334155',
               outline: 'none'
             }}
             autoFocus
           />
-          {searching && (
-            <div className="text-xs mt-2" style={{ color: '#64748b' }}>Searching...</div>
-          )}
           {searchResults.length > 0 && (
-            <div className="mt-2 space-y-1">
+            <div className="mt-2 max-h-48 overflow-y-auto">
               {searchResults.map((result, i) => (
                 <button
                   key={i}
                   onClick={() => selectLocation(result)}
-                  className="w-full text-left px-3 py-2 rounded text-sm hover:bg-slate-700 transition-colors"
-                  style={{ color: '#f1f5f9' }}
+                  className="w-full text-left px-3 py-2 rounded text-sm"
+                  style={{ color: '#f1f5f9', background: '#0f172a' }}
                 >
                   📍 {result.name}, {result.admin1}, {result.country_code}
                 </button>
@@ -326,12 +328,8 @@ export default function WeatherWidget({ defaultZone = 6 }: WeatherWidgetProps) {
       <div className="flex items-center gap-3 mb-4">
         <span className="text-4xl">{weather?.icon}</span>
         <div>
-          <div className="text-3xl font-bold" style={{ color: '#f1f5f9' }}>
-            {weather?.temp}°F
-          </div>
-          <div className="text-sm" style={{ color: '#94a3b8' }}>
-            {weather?.condition} • {weather?.location}
-          </div>
+          <div className="text-3xl font-bold" style={{ color: '#f1f5f9' }}>{weather?.temp}°F</div>
+          <div className="text-sm" style={{ color: '#94a3b8' }}>{weather?.condition}</div>
         </div>
         <div className="ml-auto text-right text-sm" style={{ color: '#64748b' }}>
           <div>💨 {weather?.wind} km/h</div>
@@ -340,11 +338,9 @@ export default function WeatherWidget({ defaultZone = 6 }: WeatherWidgetProps) {
       </div>
 
       {/* Frost Dates */}
-      <div className="p-2 rounded-lg mb-4" style={{ background: '#0f172a' }}>
-        <div className="flex justify-between text-sm">
-          <span style={{ color: '#94a3b8' }}>🧊 Last Frost: <span style={{ color: '#f1f5f9' }}>{USDA_ZONES[zone]?.lastFrost || 'Unknown'}</span></span>
-          <span style={{ color: '#94a3b8' }}>🍂 First Frost: <span style={{ color: '#f1f5f9' }}>{USDA_ZONES[zone]?.firstFrost || 'Unknown'}</span></span>
-        </div>
+      <div className="p-2 rounded-lg mb-4 flex justify-between text-sm" style={{ background: '#0f172a' }}>
+        <span style={{ color: '#94a3b8' }}>🧊 Last Frost: <span style={{ color: '#f1f5f9' }}>{USDA_ZONES[zone]?.lastFrost}</span></span>
+        <span style={{ color: '#94a3b8' }}>🍂 First Frost: <span style={{ color: '#f1f5f9' }}>{USDA_ZONES[zone]?.firstFrost}</span></span>
       </div>
 
       {/* 5-Day Forecast */}
@@ -359,23 +355,19 @@ export default function WeatherWidget({ defaultZone = 6 }: WeatherWidgetProps) {
         ))}
       </div>
 
-      {/* Gardening Tips */}
-      {tips.length > 0 && (
-        <div className="space-y-2">
-          {tips.map((tip, i) => (
-            <div 
-              key={i}
-              className="text-sm p-2 rounded"
-              style={{ 
-                background: tip.type === 'success' ? '#22c55e20' : tip.type === 'warning' ? '#f59e0b20' : '#3b82f620',
-                color: tip.type === 'success' ? '#22c55e' : tip.type === 'warning' ? '#f59e0b' : '#3b82f6'
-              }}
-            >
-              {tip.text}
-            </div>
-          ))}
+      {/* Tips */}
+      {tips.map((tip, i) => (
+        <div 
+          key={i}
+          className="text-sm p-2 rounded mb-2"
+          style={{ 
+            background: tip.type === 'success' ? '#22c55e20' : tip.type === 'warning' ? '#f59e0b20' : '#3b82f620',
+            color: tip.type === 'success' ? '#22c55e' : tip.type === 'warning' ? '#f59e0b' : '#3b82f6'
+          }}
+        >
+          {tip.text}
         </div>
-      )}
+      ))}
     </div>
   );
 }
