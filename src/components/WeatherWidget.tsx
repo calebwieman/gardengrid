@@ -141,8 +141,7 @@ export default function WeatherWidget() {
       // Ignore localStorage errors
     }
     
-    fetchWeather(lat, lon, locationName);
-    setLoading(false);
+    fetchWeather(lat, lon, locationName).finally(() => setLoading(false));
   }, []);
 
   const handleSearch = async (query: string) => {
@@ -175,8 +174,7 @@ export default function WeatherWidget() {
     setSearchResults([]);
     setLoading(true);
     
-    fetchWeather(result.latitude, result.longitude, locationName);
-    setLoading(false);
+    fetchWeather(result.latitude, result.longitude, locationName).finally(() => setLoading(false));
   };
 
   const getTips = () => {
